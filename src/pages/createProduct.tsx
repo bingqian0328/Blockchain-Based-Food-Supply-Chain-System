@@ -1,147 +1,484 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getContract } from "../contracts/contractConfig";
-import { ethers } from "ethers";
-import CryptoJS from "crypto-js";
-import Navbar from "../Components/Navbar";
-import { uploadToPinata } from "../utils/pinata"; // Pinata integration utility
+import NavBar from "../components/navBar";
+import { uploadToPinata } from "../utils/pinata";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+// Simple type for inventory items (for dropdown)
+type InventoryItem = {
+  id: string;
+  name: string;
+};
 
 export default function CreateProduct() {
-    const [productName, setProductName] = useState("");
-    const [productCode, setProductCode] = useState("");
-    const [productPrice, setProductPrice] = useState("");
-    const [productCategory, setProductCategory] = useState("");
-    const [supplierName, setSupplierName] = useState("");
-    const [supplierDetails, setSupplierDetails] = useState("");
-    const [file, setFile] = useState<File | null>(null);
-    const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+  const [loadingRole, setLoadingRole] = useState(true);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            setFile(e.target.files[0]);
+  // Load manufacturer inventory (only for Manufacturer role)
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  // Selected component products from inventory with quantity required
+  const [selectedComponents, setSelectedComponents] = useState<
+    { id: string; quantity: string }[]
+  >([]);
+  // Additional free-text input for components like water, sugar, etc.
+  const [otherComponents, setOtherComponents] = useState("");
+
+  // General product details
+  const [productName, setProductName] = useState("");
+  const [barcode, setBarcode] = useState("");
+  const [productCategory, setProductCategory] = useState("");
+  const [variety, setVariety] = useState("");
+  const [misc, setMisc] = useState("");
+
+  // Generate a unique product code
+  const generateProductCode = () =>
+    "PRD-" + Math.floor(100000 + Math.random() * 900000).toString();
+  const [productCode] = useState(generateProductCode());
+
+  // Specifications & attributes
+  const [placeOfOrigin, setPlaceOfOrigin] = useState("");
+  const [productionDate, setProductionDate] = useState("");
+  const [expirationDate, setExpirationDate] = useState("");
+  const [unitQuantity, setUnitQuantity] = useState("");
+  const [unitQuantityType, setUnitQuantityType] = useState("");
+  const [batchQuantity, setBatchQuantity] = useState("");
+  const [unitPrice, setUnitPrice] = useState("");
+
+  // Additional fields for chain storage
+  const [estimatedArrivalDate, setEstimatedArrivalDate] = useState("");
+  const [nextOwnerWallet, setNextOwnerWallet] = useState("");
+  const [logisticPartnerWallet, setLogisticPartnerWallet] = useState("");
+  // NEW: Amount due input (in Wei)
+  const [amountDue, setAmountDue] = useState("");
+
+  // File upload state (optional)
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch user role on mount
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        if (!window.ethereum) {
+          alert("MetaMask is not installed!");
+          return;
         }
+        const [address] = await window.ethereum.request({ method: "eth_requestAccounts" });
+        const contract = getContract();
+        if (contract) {
+          const userRoleBN = await contract.getUserRole(address);
+          const roleMap = [
+            "Supplier",
+            "Manufacturer",
+            "Logistic Partner",
+            "Distribution Center",
+            "Retail Store"
+          ];
+          const resolvedRole = roleMap[Number(userRoleBN)] || "Unknown";
+          setRole(resolvedRole);
+        }
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+      } finally {
+        setLoadingRole(false);
+      }
     };
 
-    const handleCreateProduct = async () => {
+    fetchUserRole();
+  }, []);
+
+  // If the user is a Manufacturer, load their inventory
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        if (!window.ethereum) return;
+        const [address] = await window.ethereum.request({ method: "eth_requestAccounts" });
+        const userAddress = address.toLowerCase();
         const contract = getContract();
         if (!contract) return;
 
-        try {
-            setLoading(true);
-
-            // Upload file to IPFS via Pinata and get the hash
-            let ipfsHash = "";
-            if (file) {
-                ipfsHash = await uploadToPinata(file);
-            }
-
-            // Generate SHA-256 hash using product details
-            const hashData = `${productName}-${productCode}-${productCategory}-${supplierName}`;
-            const hash = CryptoJS.SHA256(hashData).toString(CryptoJS.enc.Hex);
-
-            // Send the transaction to create a new product
-            console.log("IPFS Hash:", ipfsHash);
-            const tx = await contract.createProduct(
-                productName,
-                parseInt(productCode),
-                ethers.utils.parseEther(productPrice),
-                productCategory,
-                supplierName,
-                supplierDetails,
-                ipfsHash // Pass IPFS hash to the smart contract
-            );
-            await tx.wait();
-
-            alert("Product created successfully!");
-        } catch (error) {
-            console.error("Error during product creation:", error);
-            alert("Failed to create product.");
-        } finally {
-            setLoading(false);
-        }
+        // Assume getInventory returns an array of products (each with id and name)
+        const inv = await contract.getInventory(userAddress);
+        // Map the result to a simpler shape (id and name)
+        const simplified = inv.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+        }));
+        setInventory(simplified);
+      } catch (error) {
+        console.error("Error fetching inventory:", error);
+      }
     };
 
-    return (
-        <div className="min-h-screen bg-gray-100">
-            <Navbar />
-            <div className="flex flex-col items-center pt-16 mt-8">
-                <h1 className="text-3xl font-bold mb-6">Create Product</h1>
-                <div className="bg-white p-8 shadow-md rounded-lg w-96">
-                    <div className="mb-4">
-                        <label className="block font-semibold text-gray-700">Product Name:</label>
-                        <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg p-2 mt-1"
-                            value={productName}
-                            onChange={(e) => setProductName(e.target.value)}
-                            placeholder="Enter product name"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block font-semibold text-gray-700">Product Code:</label>
-                        <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg p-2 mt-1"
-                            value={productCode}
-                            onChange={(e) => setProductCode(e.target.value)}
-                            placeholder="Enter product code"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block font-semibold text-gray-700">Product Price (ETH):</label>
-                        <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg p-2 mt-1"
-                            value={productPrice}
-                            onChange={(e) => setProductPrice(e.target.value)}
-                            placeholder="Enter product price in ETH"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block font-semibold text-gray-700">Product Category:</label>
-                        <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg p-2 mt-1"
-                            value={productCategory}
-                            onChange={(e) => setProductCategory(e.target.value)}
-                            placeholder="Enter product category"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block font-semibold text-gray-700">Supplier Name:</label>
-                        <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg p-2 mt-1"
-                            value={supplierName}
-                            onChange={(e) => setSupplierName(e.target.value)}
-                            placeholder="Enter supplier name"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block font-semibold text-gray-700">Supplier Details:</label>
-                        <textarea
-                            className="w-full border border-gray-300 rounded-lg p-2 mt-1"
-                            value={supplierDetails}
-                            onChange={(e) => setSupplierDetails(e.target.value)}
-                            placeholder="Enter supplier details"
-                        />
-                    </div>
-                    <div className="mb-6">
-                        <label className="block font-semibold text-gray-700">Attach Document:</label>
-                        <input
-                            type="file"
-                            className="w-full border border-gray-300 rounded-lg p-2 mt-1"
-                            onChange={handleFileChange}
-                        />
-                    </div>
-                    <button
-                        onClick={handleCreateProduct}
-                        disabled={loading}
-                        className="w-full bg-blue-600 text-white font-semibold p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                    >
-                        {loading ? "Creating..." : "Create"}
-                    </button>
-                </div>
-            </div>
-        </div>
+    if (role === "Manufacturer") {
+      fetchInventory();
+    }
+  }, [role]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  // Handler when a component product is selected from inventory
+  const handleAddComponentFromInventory = (id: string) => {
+    if (!id) return;
+    // Avoid duplicates
+    if (!selectedComponents.some((item) => item.id === id)) {
+      setSelectedComponents([...selectedComponents, { id, quantity: "" }]);
+    }
+  };
+
+  // Update quantity for a selected component
+  const handleComponentQuantityChange = (id: string, quantity: string) => {
+    setSelectedComponents((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
     );
+  };
+
+  // Remove a selected component if needed
+  const handleRemoveComponent = (id: string) => {
+    setSelectedComponents(selectedComponents.filter((item) => item.id !== id));
+  };
+
+  const handleCreateProduct = async () => {
+    const contract = getContract();
+    if (!contract) return;
+
+    try {
+      setLoading(true);
+
+      // Upload file to Pinata if provided and get the IPFS hash.
+      let ipfsHash = "";
+      if (file) {
+        ipfsHash = await uploadToPinata(file);
+      }
+
+      // Build the product attributes as expected by the smart contract.
+      const attributes = {
+        placeOfOrigin,
+        productionDate,
+        expirationDate,
+        unitQuantity: parseInt(unitQuantity) || 0,
+        unitQuantityType,
+        batchQuantity: parseInt(batchQuantity) || 0,
+        unitPrice,
+        category: productCategory,
+        variety,
+        misc: ipfsHash
+          ? `${misc} | IPFS: ${ipfsHash} | Other Components: ${otherComponents}`
+          : `${misc} | Other Components: ${otherComponents}`
+      };
+
+      // For Suppliers, component product IDs must be empty.
+      const components = role === "Supplier" ? [] : selectedComponents.map((item) => item.id);
+      const componentQuantities = role === "Supplier" ? [] : selectedComponents.map((item) => parseInt(item.quantity) || 0);
+
+      // Call the updated createProduct function on the contract.
+      // NOTE: The smart contract expects 11 parameters. The IPFS hash is now included in the attributes.misc field.
+      const tx = await contract.createProduct(
+        productCode,           // _id
+        barcode,               // _barcode
+        productName,           // _name
+        components,            // _componentProductIds
+        componentQuantities,   // _componentQuantities
+        attributes,            // ProductAttributes struct (misc includes IPFS hash)
+        nextOwnerWallet,       // _nextOwner
+        estimatedArrivalDate,  // _arrivalDate
+        logisticPartnerWallet, // _logisticPartner
+        parseInt(amountDue) || 0,  // _amountDue
+        otherComponents        // _otherComponents
+      );
+      await tx.wait();
+
+      alert("Product created successfully!");
+    } catch (error) {
+      console.error("Error creating product:", error);
+      alert("Failed to create product.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loadingRole) {
+    return <div className="min-h-screen flex justify-center items-center">Loading role...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <NavBar />
+      <main className="max-w-3xl mx-auto p-6 space-y-8">
+        <h1 className="bg-[#161C54] text-3xl font-semibold">Create Product</h1>
+
+        {/* General */}
+        <Card>
+          <CardHeader>
+            <CardTitle>General</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="product-name" >Product Name</Label>
+              <Input
+                id="product-name"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                placeholder="Enter product name"
+              />
+            </div>
+
+            {role === "Manufacturer" && (
+              <div className="space-y-3">
+                <Label>Select Component Products</Label>
+                <Select
+                  onValueChange={handleAddComponentFromInventory}
+                  defaultValue=""
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose from inventory" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {inventory.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.name} ({item.id})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {selectedComponents.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Selected Components</Label>
+                    {selectedComponents.map((comp) => (
+                      <div
+                        key={comp.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <Badge variant="secondary">{comp.id}</Badge>
+                        <Input
+                          type="number"
+                          value={comp.quantity}
+                          onChange={(e) =>
+                            handleComponentQuantityChange(comp.id, e.target.value)
+                          }
+                          className="w-20"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveComponent(comp.id)}
+                          className="text-red-600"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="other-components">Other Components</Label>
+                  <Input
+                    id="other-components"
+                    value={otherComponents}
+                    onChange={(e) => setOtherComponents(e.target.value)}
+                    placeholder="e.g., water, sugar"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="barcode">Barcode</Label>
+              <Input
+                id="barcode"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                placeholder="Enter barcode"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Input
+                id="category"
+                value={productCategory}
+                onChange={(e) => setProductCategory(e.target.value)}
+                placeholder="Enter category"
+              />
+            </div>
+            <div>
+              <Label htmlFor="variety">Variety</Label>
+              <Input
+                id="variety"
+                value={variety}
+                onChange={(e) => setVariety(e.target.value)}
+                placeholder="Enter variety"
+              />
+            </div>
+            <div>
+              <Label htmlFor="misc">Miscellaneous Details</Label>
+              <Textarea
+                id="misc"
+                value={misc}
+                onChange={(e) => setMisc(e.target.value)}
+                placeholder="Enter additional details"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Specifications & Attributes */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Specifications & Attributes</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4">
+            <div>
+              <Label htmlFor="origin">Place of Origin</Label>
+              <Input
+                id="origin"
+                value={placeOfOrigin}
+                onChange={(e) => setPlaceOfOrigin(e.target.value)}
+                placeholder="Enter place of origin"
+              />
+            </div>
+            <div>
+              <Label htmlFor="prod-date">Production Date</Label>
+              <Input
+                id="prod-date"
+                type="date"
+                value={productionDate}
+                onChange={(e) => setProductionDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="exp-date">Expiration Date</Label>
+              <Input
+                id="exp-date"
+                type="date"
+                value={expirationDate}
+                onChange={(e) => setExpirationDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="unit-qty">Unit Quantity</Label>
+              <Input
+                id="unit-qty"
+                value={unitQuantity}
+                onChange={(e) => setUnitQuantity(e.target.value)}
+                placeholder="Enter unit quantity"
+              />
+            </div>
+            <div>
+              <Label htmlFor="unit-type">Unit Quantity Type</Label>
+              <Input
+                id="unit-type"
+                value={unitQuantityType}
+                onChange={(e) => setUnitQuantityType(e.target.value)}
+                placeholder="e.g., kg, liters"
+              />
+            </div>
+            <div>
+              <Label htmlFor="batch-qty">Batch Quantity</Label>
+              <Input
+                id="batch-qty"
+                value={batchQuantity}
+                onChange={(e) => setBatchQuantity(e.target.value)}
+                placeholder="Enter batch quantity"
+              />
+            </div>
+            <div>
+              <Label htmlFor="unit-price">Unit Price</Label>
+              <Input
+                id="unit-price"
+                value={unitPrice}
+                onChange={(e) => setUnitPrice(e.target.value)}
+                placeholder="Enter unit price"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Arrival, Next Owner, Logistics & Invoice */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Shipping & Invoice</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4">
+            <div>
+              <Label htmlFor="arrival-date">Estimated Arrival Date</Label>
+              <Input
+                id="arrival-date"
+                type="date"
+                value={estimatedArrivalDate}
+                onChange={(e) => setEstimatedArrivalDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="next-owner">Next Owner Wallet Address</Label>
+              <Input
+                id="next-owner"
+                value={nextOwnerWallet}
+                onChange={(e) => setNextOwnerWallet(e.target.value)}
+                placeholder="0x..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="logistic-wallet">Logistic Partner Wallet Address</Label>
+              <Input
+                id="logistic-wallet"
+                value={logisticPartnerWallet}
+                onChange={(e) => setLogisticPartnerWallet(e.target.value)}
+                placeholder="0x..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="amount-due">Amount Due (Wei)</Label>
+              <Input
+                id="amount-due"
+                value={amountDue}
+                onChange={(e) => setAmountDue(e.target.value)}
+                placeholder="Enter amount due"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Proof of Product */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Proof of Product</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Label htmlFor="proof-file">Upload Document</Label>
+            <Input
+              id="proof-file"
+              type="file"
+              onChange={handleFileChange}
+            />
+          </CardContent>
+        </Card>
+
+        <Button
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+          onClick={handleCreateProduct}
+          disabled={loading}
+        >
+          {loading ? "Creating..." : "Create Product and Ship"}
+        </Button>
+      </main>
+    </div>
+  );
 }

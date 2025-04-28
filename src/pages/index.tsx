@@ -1,72 +1,51 @@
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { getContract } from "../contracts/contractConfig";
 import NavBar from "../Components/navBar";
 
 export default function Home() {
-    const [walletAddress, setWalletAddress] = useState("Loading...");
-    const [role, setRole] = useState("Loading...");
+  const cards = [
+    { href: "/RegisterUser", icon: "👤", label: "Register" },
+    { href: "/createProduct", icon: "➕", label: "Create" },
+    { href: "/viewProducts", icon: "📋", label: "View Shipment" },
+    { href: "/decodeQR", icon: "📸🔎", label: "Scan & Track" },
+    { href: "/Inventory", icon: "📦", label: "Inventory" },
+    { href: "/payAmountDue", icon: "💰", label: "Pay Due" },
+  ];
 
-    useEffect(() => {
-        const fetchWalletAndRole = async () => {
-            try {
-                // Connect to MetaMask
-                if (window.ethereum) {
-                    const [address] = await window.ethereum.request({ method: "eth_requestAccounts" });
-                    setWalletAddress(address);
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* fixed navbar */}
+      <NavBar />
 
-                    // Fetch user role from the smart contract
-                    const contract = getContract();
-                    if (contract) {
-                        const userRole = await contract.registeredUsers(address);
-                        const roleMap = ["None", "Supplier", "Logistics", "Merchant", "Customer"];
-                        setRole(roleMap[userRole] || "Unknown");
-                    }
-                } else {
-                    alert("MetaMask is not installed!");
-                }
-            } catch (error) {
-                console.error("Error fetching wallet and role:", error);
-                setWalletAddress("Unable to fetch wallet");
-                setRole("Unknown");
-            }
-        };
+      {/* main hero + grid */}
+      <main className="pt-24 pb-12 max-w-5xl mx-auto px-4">
+        {/* Optional intro banner */}
+        <section className="mb-12">
+          <h1 className="text-4xl font-extrabold text-center text-[#161C54]">
+            Welcome to FoodSecure
+          </h1>
+          <p className="mt-2 text-center text-gray-600">
+            Blockchain‑powered transparency for your entire food supply chain.
+          </p>
+        </section>
 
-        fetchWalletAndRole();
-    }, []);
-
-    return (
-        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-0">
-            {/* Reusable Navbar */}
-            <NavBar />
-
-
-            {/* Main content section */}
-            <div className="mt-24 grid grid-cols-2 gap-8">
-                {/* Register Button */}
-                <Link href="/RegisterUser">
-                    <div className="bg-white shadow-md p-8 flex flex-col items-center rounded-lg cursor-pointer hover:shadow-lg">
-                        <div className="text-4xl text-blue-600 mb-4">👤</div>
-                        <p className="text-lg font-semibold">Register</p>
-                    </div>
-                </Link>
-
-                {/* Create Button */}
-                <Link href="/createProduct">
-                    <div className="bg-white shadow-md p-8 flex flex-col items-center rounded-lg cursor-pointer hover:shadow-lg">
-                        <div className="text-4xl text-blue-600 mb-4">➕</div>
-                        <p className="text-lg font-semibold">Create</p>
-                    </div>
-                </Link>
-
-                {/* View Button */}
-                <Link href="/viewProducts">
-                    <div className="bg-white shadow-md p-8 flex flex-col items-center rounded-lg cursor-pointer hover:shadow-lg">
-                        <div className="text-4xl text-blue-600 mb-4">📋</div>
-                        <p className="text-lg font-semibold">View</p>
-                    </div>
-                </Link>
-            </div>
-        </div>
-    );
+        {/* action cards grid */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {cards.map(({ href, icon, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="block bg-white rounded-2xl shadow-md hover:shadow-xl transition p-8 flex flex-col items-center text-center"
+            >
+              <div className="text-5xl mb-4 group-hover:text-[#57C4E5] transition">
+                {icon}
+              </div>
+              <span className="mt-auto text-lg font-semibold text-[#161C54] group-hover:text-[#57C4E5] transition">
+                {label}
+              </span>
+            </Link>
+          ))}
+        </section>
+      </main>
+    </div>
+  );
 }
