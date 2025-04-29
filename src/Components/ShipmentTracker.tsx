@@ -9,7 +9,7 @@ type ShipmentTrackerProps = {
 
 export default function ShipmentTracker({ currentStatus }: ShipmentTrackerProps) {
   const steps = [
-    { status: 0, label: "Not Shipped" },
+    { status: 0, label: "Payment" },
     { status: 1, label: "Ready For Shipment" },
     { status: 2, label: "Picked Up" },
     { status: 3, label: "Sorting Center" },
@@ -22,13 +22,13 @@ export default function ShipmentTracker({ currentStatus }: ShipmentTrackerProps)
   const progressValue = (currentStatus / (steps.length - 1)) * 100;
 
   return (
-    <div className="w-full py-6">
+    <div className="w-full py-4">
       <div className="relative">
-        {/* Progress bar behind the circles */}
+        {/* Progress bar */}
         <div className="absolute top-4 left-0 w-full">
-          <div className="h-[2px] w-[calc(100%-2rem)] ml-8 bg-muted">
+          <div className="h-[2px] w-[calc(100%-2rem)] ml-8 bg-gray-200">
             <div
-              className="h-full bg-primary transition-all duration-300"
+              className="h-full bg-[#2D4EA2] transition-all duration-300"
               style={{ width: `${progressValue}%` }}
             />
           </div>
@@ -41,29 +41,29 @@ export default function ShipmentTracker({ currentStatus }: ShipmentTrackerProps)
               key={step.status}
               className={cn(
                 "flex flex-col items-center",
-                step.status <= currentStatus ? "text-primary" : "text-muted-foreground"
+                step.status <= currentStatus ? "text-[#2D4EA2]" : "text-gray-400"
               )}
             >
               <div
                 className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center border-2 bg-background",
+                  "w-8 h-8 rounded-full flex items-center justify-center border-2 bg-white transition-all duration-300",
                   step.status <= currentStatus 
-                    ? "border-primary bg-primary text-primary-foreground" 
-                    : "border-muted-foreground/30"
+                    ? "border-[#2D4EA2] bg-[#2D4EA2] text-white" 
+                    : "border-gray-300"
                 )}
               >
                 {step.status <= currentStatus ? (
-                  <Check className="h-5 w-5" />
+                  <Check className="h-4 w-4" />
                 ) : (
-                  <span className="text-sm">{step.status + 1}</span>
+                  <span className="text-xs font-medium">{step.status + 1}</span>
                 )}
               </div>
               <span 
                 className={cn(
-                  "text-xs font-medium mt-2 text-center max-w-[80px]",
+                  "text-xs font-medium mt-2 text-center max-w-[80px] transition-colors duration-300",
                   step.status <= currentStatus 
-                    ? "text-foreground" 
-                    : "text-muted-foreground"
+                    ? "text-[#161C54]" 
+                    : "text-gray-400"
                 )}
               >
                 {step.label}

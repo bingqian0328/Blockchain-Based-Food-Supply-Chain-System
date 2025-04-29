@@ -126,45 +126,39 @@ export default function RegisterUser() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-[#EEF2F6]">
       <NavBar />
 
-      <div className="flex-1 flex justify-center items-start pt-24 px-4">
-        <div className="w-full max-w-md mx-auto">
+      <main className="pt-24 pb-12 max-w-7xl mx-auto px-4">
+        {/* Hero Section */}
+        <section className="mb-12 text-center">
+          <h1 className="text-4xl font-bold text-[#161C54] mb-2">
+            Register Your Business
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Join our blockchain-powered food supply chain network
+          </p>
+        </section>
+
+        {/* Registration Form */}
+        <div className="max-w-2xl mx-auto">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="
-                bg-white
-                p-8
-                rounded-2xl
-                shadow-xl
-                border border-gray-200
-                space-y-6
-              "
+              className="bg-white rounded-2xl shadow-md p-8 space-y-6 border-2 border-transparent hover:border-[#2D4EA2] transition-colors duration-300"
             >
-              {/* Title */}
-              <h2 className="text-2xl font-bold text-center text-[#161C54] mb-6">
-                Register as a User
-              </h2>
-
-              {/* Role */}
+              {/* Form fields - updating styles */}
               <FormField
                 control={form.control}
                 name="role"
                 rules={{ required: "Please select a role" }}
                 render={({ field }) => (
-                  <FormItem className="space-y-1 mb-4">
-                    <FormLabel className="text-[#161C54] font-medium mb-1">
-                      Select Role
-                    </FormLabel>
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-[#161C54] font-medium">Role</FormLabel>
                     <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <SelectTrigger className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4F55F7] transition">
-                          <SelectValue placeholder="Select role" />
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="w-full bg-white border-gray-200 rounded-lg hover:border-[#2D4EA2] transition-colors">
+                          <SelectValue placeholder="Select your role" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Supplier">Supplier</SelectItem>
@@ -181,7 +175,7 @@ export default function RegisterUser() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-red-500 text-sm" />
                   </FormItem>
                 )}
               />
@@ -293,33 +287,35 @@ export default function RegisterUser() {
               />
 
               {/* Business License */}
-              <div className="mb-6">
-                <FormLabel className="text-[#161C54] font-medium mb-1">
-                  Proof of Business License
+              <div className="space-y-2">
+                <FormLabel className="text-[#161C54] font-medium">
+                  Business License
                 </FormLabel>
-                <label
-                  className="
-                    flex items-center
-                    space-x-3
-                    px-4 py-2
-                    bg-gray-50
-                    border border-gray-300
-                    rounded-lg
-                    cursor-pointer
-                    hover:bg-gray-100
-                    transition
-                  "
-                >
-                  <span className="text-gray-500">📁</span>
-                  <span className="text-gray-600">
-                    {businessLicenseFile ? businessLicenseFile.name : "Choose file…"}
-                  </span>
+                <label className="group flex items-center justify-center w-full p-4 bg-white border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-[#2D4EA2] transition-colors">
+                  <div className="text-center">
+                    <div className="flex justify-center mb-2">
+                      <svg 
+                        className="w-8 h-8 text-gray-400 group-hover:text-[#2D4EA2] transition-colors" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M12 4v16m8-8H4" 
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      {businessLicenseFile ? businessLicenseFile.name : "Upload business license"}
+                    </span>
+                  </div>
                   <input
                     type="file"
                     accept=".pdf,.jpg,.png"
-                    onChange={(e) =>
-                      e.target.files && setBusinessLicenseFile(e.target.files[0])
-                    }
+                    onChange={(e) => e.target.files && setBusinessLicenseFile(e.target.files[0])}
                     className="hidden"
                   />
                 </label>
@@ -328,26 +324,36 @@ export default function RegisterUser() {
               {/* Submit */}
               <Button
                 type="submit"
-                className="
-                  w-full
-                  bg-[#161C54] hover:bg-[#2a3171]
-                  text-white
-                  py-3
-                  rounded-lg
-                  font-semibold
-                  tracking-wide
-                  shadow-lg
-                  transform hover:-translate-y-0.5
-                  transition
-                "
+                className="w-full bg-[#2D4EA2] hover:bg-[#263F82] text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:-translate-y-0.5"
                 disabled={loading}
               >
-                {loading ? "Registering…" : "Register"}
+                <span className="flex items-center justify-center">
+                  {loading ? (
+                    "Registering..."
+                  ) : (
+                    <>
+                      Register Now
+                      <svg 
+                        className="ml-2 w-5 h-5" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M14 5l7 7m0 0l-7 7m7-7H3" 
+                        />
+                      </svg>
+                    </>
+                  )}
+                </span>
               </Button>
             </form>
           </Form>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

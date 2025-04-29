@@ -42,14 +42,14 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-[#EEF2F6]"> {/* Changed from gradient to solid color */}
       <NavBar />
 
       <main className="pt-24 pb-12 max-w-7xl mx-auto px-4">
         {/* Hero Section */}
         <section className="mb-16 text-center">
           <h1 className="text-5xl font-extrabold text-[#161C54] mb-4">
-            Welcome to <span className="text-[#57C4E5]">FoodSecure</span>
+            Welcome to <span className="text-[#2D4EA2]">FoodSecure</span>
           </h1>
           <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
             Blockchain‑powered transparency for your entire food supply chain.
@@ -63,14 +63,14 @@ export default function Home() {
             <Link
               key={href}
               href={href}
-              className="group relative overflow-hidden bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              className="group relative overflow-hidden bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300"
             >
               <div className="p-8">
                 <div className="flex items-center mb-4">
                   <span className="text-4xl group-hover:scale-110 transition-transform duration-300">
                     {icon}
                   </span>
-                  <h3 className="ml-4 text-xl font-semibold text-[#161C54] group-hover:text-[#57C4E5] transition-colors">
+                  <h3 className="ml-4 text-xl font-semibold text-[#1B2437] group-hover:text-[#2D4EA2] transition-colors">
                     {label}
                   </h3>
                 </div>
@@ -79,7 +79,7 @@ export default function Home() {
                 </p>
                 <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <svg 
-                    className="w-6 h-6 text-[#57C4E5]" 
+                    className="w-6 h-6 text-[#2D4EA2]" 
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -93,7 +93,7 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-              <div className="absolute inset-0 border-2 border-transparent group-hover:border-[#57C4E5] rounded-2xl transition-colors duration-300" />
+              <div className="absolute inset-0 border-2 border-transparent group-hover:border-[#2D4EA2] rounded-2xl transition-colors duration-300" />
             </Link>
           ))}
         </section>
@@ -108,7 +108,7 @@ export default function Home() {
           </p>
           <Link
             href="/RegisterUser"
-            className="inline-flex items-center px-6 py-3 bg-[#57C4E5] text-white font-semibold rounded-lg hover:bg-[#4FA8D8] transition-colors"
+            className="inline-flex items-center px-6 py-3 bg-[#2D4EA2] text-white font-semibold rounded-lg hover:bg-[#263F82] transition-colors"
           >
             Register Now
             <svg 

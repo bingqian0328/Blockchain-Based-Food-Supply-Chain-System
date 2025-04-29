@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getContract } from "@/contracts/contractConfig";
 import NavBar from "@/components/navBar";
+import { Package as PackageIcon } from "lucide-react";  // Add this import
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -231,81 +232,127 @@ export default function ViewProducts() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#EEF2F6]">
       <NavBar />
-      <main className="max-w-7xl mx-auto p-6">
-        <h1 className="text-3xl font-semibold mb-6">My Products</h1>
+      <main className="pt-24 pb-12 max-w-7xl mx-auto px-4">
+        {/* Hero Section */}
+        <section className="mb-16 text-center">
+          <h1 className="text-4xl font-bold text-[#161C54] mb-4">
+            Product <span className="text-[#2D4EA2]">Tracking</span>
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Monitor and manage your supply chain shipments in real-time
+          </p>
+        </section>
 
-        <Tabs defaultValue="assigned" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="assigned">Assigned</TabsTrigger>
+        {/* Tabs Section */}
+        <Tabs defaultValue="assigned" className="space-y-8">
+          <TabsList className="bg-white/50 backdrop-blur-sm p-1 rounded-xl">
+            <TabsTrigger 
+              value="assigned"
+              className="px-6 py-2 rounded-lg text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-[#2D4EA2] data-[state=active]:shadow-sm"
+            >
+              Assigned
+            </TabsTrigger>
             {["Supplier", "Manufacturer"].includes(userRole) && (
-              <TabsTrigger value="created">Created</TabsTrigger>
+              <TabsTrigger 
+                value="created"
+                className="px-6 py-2 rounded-lg text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-[#2D4EA2] data-[state=active]:shadow-sm"
+              >
+                Created
+              </TabsTrigger>
             )}
-            <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger 
+              value="history"
+              className="px-6 py-2 rounded-lg text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-[#2D4EA2] data-[state=active]:shadow-sm"
+            >
+              History
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="assigned">
+          <TabsContent value="assigned" className="space-y-8">
             {loading ? (
-              <p>Loading…</p>
+              <div className="text-center py-12">
+                <p className="text-gray-600">Loading...</p>
+              </div>
             ) : assignedProducts.length === 0 ? (
-              <p>No products assigned to you.</p>
+              <div className="text-center py-12 bg-white rounded-2xl shadow-md">
+                <p className="text-gray-600">No products assigned to you.</p>
+              </div>
             ) : (
               assignedProducts.map((p) => (
-                <Card key={p.id} className="mb-4">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      {p.name}
-                      <Badge>{statusLabel(p.shipmentStatus)}</Badge>
-                    </CardTitle>
+                <Card 
+                  key={p.id} 
+                  className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-[#2D4EA2]"
+                >
+                  <CardHeader className="border-b border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 bg-[#EEF2F6] rounded-lg">
+                          <PackageIcon className="w-5 h-5 text-[#2D4EA2]" />
+                        </div>
+                        <CardTitle className="text-[#161C54] text-xl">
+                          {p.name}
+                        </CardTitle>
+                      </div>
+                      <Badge className="bg-[#EEF2F6] text-[#2D4EA2] font-medium px-3 py-1">
+                        {statusLabel(p.shipmentStatus)}
+                      </Badge>
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <strong>ID:</strong> {p.id}
+                  
+                  <CardContent className="pt-6">
+                    {/* Product Details Grid */}
+                    <div className="grid grid-cols-2 gap-x-12 gap-y-4">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">ID</p>
+                        <p className="text-sm font-medium text-[#161C54]">{p.id}</p>
                       </div>
-                      <div>
-                        <strong>Barcode:</strong> {p.barcode}
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Barcode</p>
+                        <p className="text-sm font-medium text-[#161C54]">{p.barcode}</p>
                       </div>
-                      <div>
-                        <strong>Next Owner:</strong> {p.nextOwner}
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Next Owner</p>
+                        <p className="text-sm font-medium text-[#161C54]">{p.nextOwner}</p>
                       </div>
-                      <div>
-                        <strong>Logistic Partner:</strong> {p.logisticPartner}
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Logistic Partner</p>
+                        <p className="text-sm font-medium text-[#161C54]">{p.logisticPartner}</p>
                       </div>
-                      <div>
-                        <strong>Location:</strong> {p.locationEntry.location}
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Location</p>
+                        <p className="text-sm font-medium text-[#161C54]">{p.locationEntry.location}</p>
                       </div>
-                      <div>
-                        <strong>Arrival:</strong> {p.locationEntry.arrivalDate}
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Arrival</p>
+                        <p className="text-sm font-medium text-[#161C54]">{p.locationEntry.arrivalDate}</p>
                       </div>
-                      <div>
-                        <strong>Category:</strong> {p.attributes.category}
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Category</p>
+                        <p className="text-sm font-medium text-[#161C54]">{p.attributes.category}</p>
                       </div>
-                      <div>
-                        <strong>Variety:</strong> {p.attributes.variety}
-                      </div>
-                      <div className="col-span-2">
-                        <strong>Shipment Status:</strong>{" "}
-                        <Badge variant={p.shipmentStatus === 5 ? "success" : "secondary"}>
-                          {statusLabel(p.shipmentStatus)}
-                        </Badge>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Variety</p>
+                        <p className="text-sm font-medium text-[#161C54]">{p.attributes.variety}</p>
                       </div>
                     </div>
-                    <div className="mt-6">
+
+                    {/* Shipment Tracker */}
+                    <div className="mt-8 p-6 rounded-xl">
+                      <h3 className="text-[#161C54] font-medium mb-4">Shipment Progress</h3>
                       <ShipmentTracker currentStatus={p.shipmentStatus} />
                     </div>
 
+                    {/* Action Buttons */}
                     {userRole === "Logistic Partner" && p.shipmentStatus < 7 && (
-                      <div className="mt-4 flex items-center space-x-3">
+                      <div className="mt-6 flex items-center gap-3">
                         <Select
                           value={String(shipmentStatusUpdates[p.id])}
-                          onValueChange={(v) =>
-                            handleShipmentChange(p.id, Number(v))
-                          }
+                          onValueChange={(v) => handleShipmentChange(p.id, Number(v))}
                         >
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Change Status" />
+                          <SelectTrigger className="w-48 border-gray-200 hover:border-[#2D4EA2] transition-colors">
+                            <SelectValue placeholder="Update Status" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="0">Not Shipped</SelectItem>
@@ -318,37 +365,31 @@ export default function ViewProducts() {
                             <SelectItem value="7">Delivered</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button onClick={() => updateShipment(p.id)}>
-                          Update
+                        <Button 
+                          onClick={() => updateShipment(p.id)}
+                          className="bg-[#2D4EA2] hover:bg-[#263F82] text-white font-medium px-6"
+                        >
+                          Update Status
                         </Button>
                       </div>
                     )}
 
+                    {/* Receive Button */}
                     {["Manufacturer", "Retail Store"].includes(userRole) &&
-                      p.shipmentStatus === 4 &&
+                      p.shipmentStatus === 7 &&
                       p.nextOwner === userAddress && (
-                        <Button
-                          variant="secondary"
-                          className="mt-4"
-                          onClick={() => markReceived(p.id)}
-                        >
-                          Parcel Received
-                        </Button>
-                      )}
-
-                    {["Manufacturer", "Retail Store"].includes(userRole) &&
-                      (p.shipmentStatus === 7) && // Delivered
-                      p.nextOwner === userAddress && (
-                        <div className="mt-4">
+                        <div className="mt-6">
                           {inventoryProducts.has(p.id) ? (
-                            <Badge variant="success" className="w-full flex justify-center py-2">
+                            <Badge 
+                              variant="success" 
+                              className="w-full flex justify-center py-2.5 bg-green-50 text-green-700 font-medium"
+                            >
                               Added to Inventory
                             </Badge>
-                          ) : !receivedProducts.has(p.id) && (
+                          ) : (
                             <Button
-                              variant="secondary"
-                              className="w-full"
                               onClick={() => markReceived(p.id)}
+                              className="w-full bg-[#2D4EA2] hover:bg-[#263F82] text-white font-medium py-2.5 rounded-lg transition-all duration-300 transform hover:-translate-y-0.5"
                             >
                               Product Received & Add to Inventory
                             </Button>
@@ -361,19 +402,32 @@ export default function ViewProducts() {
             )}
           </TabsContent>
 
-          <TabsContent value="created">
+          <TabsContent value="created" className="space-y-8">
             {loading ? (
-              <p>Loading…</p>
+              <div className="text-center py-12">
+                <p className="text-gray-600">Loading...</p>
+              </div>
             ) : createdProducts.length === 0 ? (
-              <p>You haven’t created any products yet.</p>
+              <div className="text-center py-12 bg-white rounded-2xl shadow-md">
+                <p className="text-gray-600">You haven’t created any products yet.</p>
+              </div>
             ) : (
               createdProducts.map((p) => (
-                <Card key={p.id} className="mb-4">
+                <Card 
+                  key={p.id} 
+                  className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-[#2D4EA2]"
+                >
                   <CardHeader>
-                    <CardTitle>{p.name}</CardTitle>
+                    <CardTitle className="flex items-center justify-between text-[#161C54]">
+                      <span>{p.name}</span>
+                      <Badge className="bg-[#EEF2F6] text-[#2D4EA2]">
+                        {statusLabel(p.shipmentStatus)}
+                      </Badge>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Product Details Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
                       <div>
                         <strong>ID:</strong> {p.id}
                       </div>
@@ -422,7 +476,9 @@ export default function ViewProducts() {
                         )}
                       </div>
                     </div>
-                    <div className="mt-6">
+
+                    {/* Shipment Tracker */}
+                    <div className="mt-6 p-4 rounded-xl">
                       <ShipmentTracker currentStatus={p.shipmentStatus} />
                     </div>
                   </CardContent>
@@ -432,22 +488,32 @@ export default function ViewProducts() {
           </TabsContent>
 
           {userRole === "Logistic Partner" && (
-            <TabsContent value="history">
+            <TabsContent value="history" className="space-y-8">
               {loading ? (
-                <p>Loading…</p>
+                <div className="text-center py-12">
+                  <p className="text-gray-600">Loading...</p>
+                </div>
               ) : logisticsHistory.length === 0 ? (
-                <p>No delivery history available.</p>
+                <div className="text-center py-12 bg-white rounded-2xl shadow-md">
+                  <p className="text-gray-600">No delivery history available.</p>
+                </div>
               ) : (
                 logisticsHistory.map((p) => (
-                  <Card key={p.id} className="mb-4">
+                  <Card 
+                    key={p.id} 
+                    className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-[#2D4EA2]"
+                  >
                     <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        {p.name}
-                        <Badge variant="success">Delivered</Badge>
+                      <CardTitle className="flex items-center justify-between text-[#161C54]">
+                        <span>{p.name}</span>
+                        <Badge className="bg-[#EEF2F6] text-[#2D4EA2]">
+                          Delivered
+                        </Badge>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 gap-4">
+                      {/* Product Details Grid */}
+                      <div className="grid grid-cols-2 gap-4 mb-6">
                         <div>
                           <strong>ID:</strong> {p.id}
                         </div>
@@ -467,7 +533,9 @@ export default function ViewProducts() {
                           <strong>Category:</strong> {p.attributes.category}
                         </div>
                       </div>
-                      <div className="mt-6">
+
+                      {/* Shipment Tracker */}
+                      <div className="mt-6 p-4 rounded-xl">
                         <ShipmentTracker currentStatus={7} />
                       </div>
                     </CardContent>
@@ -477,22 +545,32 @@ export default function ViewProducts() {
             </TabsContent>
           )}
 
-          <TabsContent value="history">
+          <TabsContent value="history" className="space-y-8">
             {loading ? (
-              <p>Loading…</p>
+              <div className="text-center py-12">
+                <p className="text-gray-600">Loading...</p>
+              </div>
             ) : productHistory.length === 0 ? (
-              <p>No products in history.</p>
+              <div className="text-center py-12 bg-white rounded-2xl shadow-md">
+                <p className="text-gray-600">No products in history.</p>
+              </div>
             ) : (
               productHistory.map((p) => (
-                <Card key={p.id} className="mb-4">
+                <Card 
+                  key={p.id} 
+                  className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-[#2D4EA2]"
+                >
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      {p.name}
-                      <Badge variant="success">In Inventory</Badge>
+                    <CardTitle className="flex items-center justify-between text-[#161C54]">
+                      <span>{p.name}</span>
+                      <Badge className="bg-[#EEF2F6] text-[#2D4EA2]">
+                        In Inventory
+                      </Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Product Details Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
                       <div>
                         <strong>ID:</strong> {p.id}
                       </div>
@@ -518,7 +596,9 @@ export default function ViewProducts() {
                         </Badge>
                       </div>
                     </div>
-                    <div className="mt-6">
+
+                    {/* Shipment Tracker */}
+                    <div className="mt-6 p-4 rounded-xl">
                       <ShipmentTracker currentStatus={7} />
                     </div>
                   </CardContent>

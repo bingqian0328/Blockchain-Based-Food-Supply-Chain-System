@@ -75,85 +75,127 @@ export default function DecodeQR() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-[#EEF2F6]">
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="w-full max-w-lg bg-white p-8 shadow-lg rounded-lg">
-          <h2 className="text-2xl font-bold mb-6 text-center text-[#161C54]">QR Code Scanner</h2>
+      <main className="pt-24 pb-12 max-w-7xl mx-auto px-4">
+        {/* Hero Section */}
+        <section className="mb-16 text-center">
+          <h1 className="text-4xl font-bold text-[#161C54] mb-4">
+            QR Code <span className="text-[#2D4EA2]">Scanner</span>
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Scan and track products in your supply chain
+          </p>
+        </section>
 
-          <Form {...form}>
-          <FormField
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-md p-8 border-2 border-transparent hover:border-[#2D4EA2] transition-all duration-300">
+            <Form {...form}>
+              <FormField
                 name="file"
                 render={() => (
-                    <FormItem className="mb-6">
-                    <FormLabel className="text-[#161C54] block mb-2">Upload QR Code Image</FormLabel>
+                  <FormItem className="mb-6">
+                    <FormLabel className="text-[#161C54] font-medium">Upload QR Code Image</FormLabel>
                     <FormControl>
-                        <label
-                        className="
-                            flex items-center gap-2 px-4 py-2
-                            bg-gray-50 text-gray-700
-                            border border-gray-300 rounded-lg
-                            cursor-pointer transition
-                            hover:bg-gray-100
-                            w-full
-                        "
-                        >
-                        📁 Choose file…
+                      <label className="group flex flex-col items-center justify-center w-full p-8 bg-[#EEF2F6] border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#2D4EA2] transition-colors">
+                        <div className="text-center">
+                          <div className="flex justify-center mb-4">
+                            <svg 
+                              className="w-10 h-10 text-gray-400 group-hover:text-[#2D4EA2] transition-colors" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                strokeWidth={2} 
+                                d="M4 16l4 4m0 0l4-4m-4 4V8m0 0l4 4m-4-4l-4 4m16-4l-4 4m0 0l-4-4m4 4V8m0 0l-4 4m4-4l4 4" 
+                              />
+                            </svg>
+                          </div>
+                          <p className="text-sm font-medium text-gray-600 group-hover:text-[#2D4EA2]">
+                            Click to upload or drag and drop
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Supported formats: JPG, PNG, GIF
+                          </p>
+                        </div>
                         <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
                         />
-                        </label>
+                      </label>
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-          </Form>
+              />
+            </Form>
 
-          {qrData && (
-            <Alert
-              variant="default"
-              className={`mt-6 ${isUrl ? "border-blue-500" : "border-green-500"} bg-opacity-10`}
-            >
-              <div className="flex gap-2">
-                {isUrl ? (
-                  <LinkIcon className="text-blue-500 mt-1" />
-                ) : (
-                  <AlertCircle className="text-green-500 mt-1" />
-                )}
-                <div>
-                  <AlertTitle className={isUrl ? "text-blue-800" : "text-green-800"}>
-                    QR Code Result
-                  </AlertTitle>
-                  <AlertDescription className="break-all text-sm mt-1">{qrData}</AlertDescription>
-                  {isUrl && (
-                    <a
-                      href={qrData}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline text-sm mt-2 inline-block"
-                    >
-                      Open Link
-                    </a>
+            {qrData && (
+              <Alert
+                variant="default"
+                className={`mt-6 border-2 ${
+                  isUrl ? "border-[#2D4EA2] bg-[#EEF2F6]" : "border-green-500 bg-green-50"
+                }`}
+              >
+                <div className="flex gap-3">
+                  {isUrl ? (
+                    <LinkIcon className="text-[#2D4EA2] h-5 w-5 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="text-green-500 h-5 w-5 mt-0.5" />
                   )}
+                  <div>
+                    <AlertTitle className={`font-medium ${
+                      isUrl ? "text-[#161C54]" : "text-green-800"
+                    }`}>
+                      QR Code Result
+                    </AlertTitle>
+                    <AlertDescription className="break-all text-sm mt-2">
+                      {qrData}
+                    </AlertDescription>
+                    {isUrl && (
+                      <a
+                        href={qrData}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center mt-3 text-sm font-medium text-[#2D4EA2] hover:text-[#263F82] transition-colors"
+                      >
+                        Open Link
+                        <svg 
+                          className="ml-1 w-4 h-4" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
+                          />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Alert>
-          )}
+              </Alert>
+            )}
 
-          {error && (
-            <Alert variant="destructive" className="mt-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Upload Failed</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+            {error && (
+              <Alert variant="destructive" className="mt-6 border-2 border-red-500 bg-red-50">
+                <AlertCircle className="h-5 w-5" />
+                <AlertTitle className="font-medium">Upload Failed</AlertTitle>
+                <AlertDescription className="mt-1">{error}</AlertDescription>
+              </Alert>
+            )}
+          </div>
         </div>
-      </div>
+      </main>
     </div>
-  )
+  );
 }

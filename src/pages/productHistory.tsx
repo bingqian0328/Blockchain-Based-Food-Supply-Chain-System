@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { getContract } from "../contracts/contractConfig";
 import NavBar from "../components/navBar";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { History, Clock, FileText } from "lucide-react";
 
 // Define the type for history events
 type HistoryEvent = {
@@ -51,34 +53,80 @@ export default function ProductHistory() {
   }, [productId]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-[#EEF2F6]">
       <NavBar />
-      <div className="mt-24 p-8">
-        <h2 className="text-2xl font-bold mb-4">
-          Product History for {productId ? productId : "Unknown"}
-        </h2>
+      <main className="pt-24 pb-12 max-w-7xl mx-auto px-4">
+        {/* Hero Section */}
+        <section className="mb-16 text-center">
+          <h1 className="text-4xl font-bold text-[#161C54] mb-4">
+            Product <span className="text-[#2D4EA2]">History</span>
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Track the complete journey of product {productId}
+          </p>
+        </section>
+
         {loading ? (
-          <p>Loading history...</p>
+          <div className="text-center py-12">
+            <p className="text-gray-600">Loading history...</p>
+          </div>
         ) : historyEvents.length === 0 ? (
-          <p>No history events found for this product.</p>
+          <div className="text-center py-12 bg-white rounded-2xl shadow-md">
+            <p className="text-gray-600">No history events found for this product.</p>
+          </div>
         ) : (
-          <div className="space-y-4">
-            {historyEvents.map((evt, index) => (
-              <div key={index} className="p-4 border rounded">
-                <p>
-                  <strong>Event Type:</strong> {evt.eventType}
-                </p>
-                <p>
-                  <strong>Details:</strong> {evt.details}
-                </p>
-                <p>
-                  <strong>Timestamp:</strong> {new Date(evt.timestamp * 1000).toLocaleString()}
-                </p>
-              </div>
-            ))}
+          <div className="space-y-6">
+            <Card className="bg-white rounded-2xl shadow-md border-2 border-transparent">
+              <CardHeader className="border-b border-gray-100">
+                <div className="flex items-center space-x-4">
+                  <div className="p-2 bg-white rounded-lg border-2 border-[#2D4EA2]">
+                    <History className="w-6 h-6 text-[#2D4EA2]" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl text-[#161C54]">
+                      Product Event Timeline
+                    </CardTitle>
+                    <p className="text-gray-500 mt-1">Product ID: {productId}</p>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="pt-8">
+                <div className="space-y-6">
+                  {historyEvents.map((evt, index) => (
+                    <div 
+                      key={index} 
+                      className="flex gap-6 pb-6 border-b border-gray-100 last:border-0"
+                    >
+                      <div className="flex flex-col items-center">
+                        <div className="p-2 bg-white rounded-lg border-2 border-[#2D4EA2]">
+                          {evt.eventType.includes('Location') ? (
+                            <Clock className="w-5 h-5 text-[#2D4EA2]" />
+                          ) : (
+                            <FileText className="w-5 h-5 text-[#2D4EA2]" />
+                          )}
+                        </div>
+                        <div className="flex-1 w-px bg-gray-200 my-2" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-lg font-medium text-[#161C54]">
+                          {evt.eventType}
+                        </p>
+                        <p className="text-gray-600 mt-1">
+                          {evt.details}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-2">
+                          {new Date(evt.timestamp * 1000).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

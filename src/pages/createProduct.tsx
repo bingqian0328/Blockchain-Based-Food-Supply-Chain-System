@@ -16,6 +16,12 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
+import { 
+  Package as PackageIcon, 
+  ClipboardList as ClipboardListIcon,
+  Truck as TruckIcon,
+  FileText as DocumentIcon 
+} from "lucide-react";
 
 const libraries = ["places"] as const;
 
@@ -276,320 +282,377 @@ export default function CreateProduct() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#EEF2F6]">
       <NavBar />
-      <main className="max-w-3xl mx-auto p-6 space-y-8">
-        <h1 className="bg-[#161C54] text-3xl font-semibold">Create Product</h1>
+      <main className="pt-24 pb-12 max-w-7xl mx-auto px-4">
+        {/* Hero Section */}
+        <section className="mb-16 text-center">
+          <h1 className="text-4xl font-bold text-[#161C54] mb-4">
+            Create <span className="text-[#2D4EA2]">Product</span>
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Add new products to the blockchain-powered supply chain
+          </p>
+        </section>
 
-        {/* General */}
-        <Card>
-          <CardHeader>
-            <CardTitle>General</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="product-name" >Product Name</Label>
-              <Input
-                id="product-name"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                placeholder="Enter product name"
-              />
-            </div>
+        <div className="max-w-3xl mx-auto space-y-8">
+          {/* General Card */}
+          <Card className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-[#2D4EA2]">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="p-2 bg-white rounded-lg border-2 border-[#2D4EA2]">
+                  <PackageIcon className="w-5 h-5 text-[#2D4EA2]" />
+                </div>
+                <CardTitle className="text-xl text-[#161C54]">General Information</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              {/* Product Name */}
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Product Name</Label>
+                <Input
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  placeholder="Enter product name"
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
 
-            {role === "Manufacturer" && (
-              <div className="space-y-3">
-                <Label>Select Component Products</Label>
-                <Select
-                  onValueChange={handleAddComponentFromInventory}
-                  defaultValue=""
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose from inventory" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {inventory.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name} ({item.id})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {selectedComponents.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Selected Components</Label>
-                    {selectedComponents.map((comp) => (
-                      <div
-                        key={comp.id}
-                        className="flex items-center space-x-2"
-                      >
-                        <Badge variant="secondary">{comp.id}</Badge>
-                        <Input
-                          type="number"
-                          value={comp.quantity}
-                          onChange={(e) =>
-                            handleComponentQuantityChange(comp.id, e.target.value)
-                          }
-                          className="w-20"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveComponent(comp.id)}
-                          className="text-red-600"
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
+              {/* Component Products (Manufacturer Only) */}
+              {role === "Manufacturer" && (
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-[#161C54] font-medium">Select Component Products</Label>
+                    <Select onValueChange={handleAddComponentFromInventory} defaultValue="">
+                      <SelectTrigger className="border-gray-200 hover:border-[#2D4EA2] transition-colors">
+                        <SelectValue placeholder="Choose from inventory" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {inventory.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name} ({item.id})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
 
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <Label>Other Components</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAddOtherComponent}
-                    >
-                      Add Component
-                    </Button>
-                  </div>
-                  
-                  {otherComponents.map((comp, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 items-start">
-                      <div className="col-span-6">
-                        <Input
-                          value={comp.name}
-                          onChange={(e) => handleUpdateOtherComponent(index, 'name', e.target.value)}
-                          placeholder="Component name"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <Input
-                          type="number"
-                          value={comp.quantity}
-                          onChange={(e) => handleUpdateOtherComponent(index, 'quantity', e.target.value)}
-                          placeholder="Qty"
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <Input
-                          value={comp.unitType}
-                          onChange={(e) => handleUpdateOtherComponent(index, 'unitType', e.target.value)}
-                          placeholder="Unit type"
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveOtherComponent(index)}
-                          className="text-red-600 px-2"
-                        >
-                          ×
-                        </Button>
+                  {/* Selected Components */}
+                  {selectedComponents.length > 0 && (
+                    <div className="space-y-3">
+                      <Label className="text-[#161C54] font-medium">Selected Components</Label>
+                      <div className="space-y-2">
+                        {selectedComponents.map((comp) => (
+                          <div
+                            key={comp.id}
+                            className="flex items-center gap-3 p-3 bg-[#EEF2F6] rounded-lg"
+                          >
+                            <Badge className="bg-white text-[#2D4EA2] font-medium">
+                              {comp.id}
+                            </Badge>
+                            <Input
+                              type="number"
+                              value={comp.quantity}
+                              onChange={(e) => handleComponentQuantityChange(comp.id, e.target.value)}
+                              className="w-24 border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveComponent(comp.id)}
+                              className="ml-auto text-red-500 hover:text-red-600 hover:bg-red-50"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Other Components */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-[#161C54] font-medium">Other Components</Label>
+                      <Button
+                        onClick={handleAddOtherComponent}
+                        className="bg-white border-2 border-[#2D4EA2] text-[#2D4EA2] hover:bg-[#EEF2F6]"
+                      >
+                        Add Component
+                      </Button>
+                    </div>
+                    
+                    {otherComponents.map((comp, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-3 items-start bg-[#EEF2F6] p-3 rounded-lg">
+                        <div className="col-span-6">
+                          <Input
+                            value={comp.name}
+                            onChange={(e) => handleUpdateOtherComponent(index, 'name', e.target.value)}
+                            placeholder="Component name"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Input
+                            type="number"
+                            value={comp.quantity}
+                            onChange={(e) => handleUpdateOtherComponent(index, 'quantity', e.target.value)}
+                            placeholder="Qty"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <Input
+                            value={comp.unitType}
+                            onChange={(e) => handleUpdateOtherComponent(index, 'unitType', e.target.value)}
+                            placeholder="Unit type"
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveOtherComponent(index)}
+                            className="text-red-600 px-2"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Other General Fields */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[#161C54] font-medium">Barcode</Label>
+                  <Input
+                    value={barcode}
+                    onChange={(e) => setBarcode(e.target.value)}
+                    placeholder="Enter barcode"
+                    className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#161C54] font-medium">Category</Label>
+                  <Input
+                    value={productCategory}
+                    onChange={(e) => setProductCategory(e.target.value)}
+                    placeholder="Enter category"
+                    className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#161C54] font-medium">Variety</Label>
+                  <Input
+                    value={variety}
+                    onChange={(e) => setVariety(e.target.value)}
+                    placeholder="Enter variety"
+                    className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label className="text-[#161C54] font-medium">Miscellaneous Details</Label>
+                  <Textarea
+                    value={misc}
+                    onChange={(e) => setMisc(e.target.value)}
+                    placeholder="Enter additional details"
+                    className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                  />
                 </div>
               </div>
-            )}
+            </CardContent>
+          </Card>
 
-            <div>
-              <Label htmlFor="barcode">Barcode</Label>
-              <Input
-                id="barcode"
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                placeholder="Enter barcode"
-              />
-            </div>
-            <div>
-              <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                value={productCategory}
-                onChange={(e) => setProductCategory(e.target.value)}
-                placeholder="Enter category"
-              />
-            </div>
-            <div>
-              <Label htmlFor="variety">Variety</Label>
-              <Input
-                id="variety"
-                value={variety}
-                onChange={(e) => setVariety(e.target.value)}
-                placeholder="Enter variety"
-              />
-            </div>
-            <div>
-              <Label htmlFor="misc">Miscellaneous Details</Label>
-              <Textarea
-                id="misc"
-                value={misc}
-                onChange={(e) => setMisc(e.target.value)}
-                placeholder="Enter additional details"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Specifications & Attributes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Specifications & Attributes</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4">
-            <div>
-              <Label htmlFor="origin">Place of Origin</Label>
-              <Autocomplete
-                onLoad={(auto) => setAutocomplete(auto)}
-                onPlaceChanged={() => {
-                  if (autocomplete) {
-                    const place = autocomplete.getPlace();
-                    const formatted = place.formatted_address || "";
-                    setPlaceOfOrigin(formatted);
-                  }
-                }}
-              >
+          {/* Specifications & Attributes */}
+          <Card className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-[#2D4EA2]">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="p-2 bg-white rounded-lg border-2 border-[#2D4EA2]">
+                  <ClipboardListIcon className="w-5 h-5 text-[#2D4EA2]" />
+                </div>
+                <CardTitle className="text-xl text-[#161C54]">Specifications & Attributes</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Place of Origin</Label>
+                <Autocomplete
+                  onLoad={(auto) => setAutocomplete(auto)}
+                  onPlaceChanged={() => {
+                    if (autocomplete) {
+                      const place = autocomplete.getPlace();
+                      const formatted = place.formatted_address || "";
+                      setPlaceOfOrigin(formatted);
+                    }
+                  }}
+                >
+                  <Input
+                    value={placeOfOrigin}
+                    onChange={(e) => setPlaceOfOrigin(e.target.value)}
+                    placeholder="Start typing location..."
+                    className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                  />
+                </Autocomplete>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Production Date</Label>
                 <Input
-                  id="origin"
-                  value={placeOfOrigin}
-                  onChange={(e) => setPlaceOfOrigin(e.target.value)}
-                  placeholder="Start typing location..."
-                  className="border-gray-300 focus:ring-[#4F55F7] focus:border-transparent"
+                  type="date"
+                  value={productionDate}
+                  onChange={(e) => setProductionDate(e.target.value)}
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
                 />
-              </Autocomplete>
-            </div>
-            <div>
-              <Label htmlFor="prod-date">Production Date</Label>
-              <Input
-                id="prod-date"
-                type="date"
-                value={productionDate}
-                onChange={(e) => setProductionDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="exp-date">Expiration Date</Label>
-              <Input
-                id="exp-date"
-                type="date"
-                value={expirationDate}
-                onChange={(e) => setExpirationDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="unit-qty">Unit Quantity</Label>
-              <Input
-                id="unit-qty"
-                value={unitQuantity}
-                onChange={(e) => setUnitQuantity(e.target.value)}
-                placeholder="Enter unit quantity"
-              />
-            </div>
-            <div>
-              <Label htmlFor="unit-type">Unit Quantity Type</Label>
-              <Input
-                id="unit-type"
-                value={unitQuantityType}
-                onChange={(e) => setUnitQuantityType(e.target.value)}
-                placeholder="e.g., kg, liters"
-              />
-            </div>
-            <div>
-              <Label htmlFor="batch-qty">Batch Quantity</Label>
-              <Input
-                id="batch-qty"
-                value={batchQuantity}
-                onChange={(e) => setBatchQuantity(e.target.value)}
-                placeholder="Enter batch quantity"
-              />
-            </div>
-            <div>
-              <Label htmlFor="unit-price">Unit Price</Label>
-              <Input
-                id="unit-price"
-                value={unitPrice}
-                onChange={(e) => setUnitPrice(e.target.value)}
-                placeholder="Enter unit price"
-              />
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Expiration Date</Label>
+                <Input
+                  type="date"
+                  value={expirationDate}
+                  onChange={(e) => setExpirationDate(e.target.value)}
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Unit Quantity</Label>
+                <Input
+                  value={unitQuantity}
+                  onChange={(e) => setUnitQuantity(e.target.value)}
+                  placeholder="Enter unit quantity"
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Unit Quantity Type</Label>
+                <Input
+                  value={unitQuantityType}
+                  onChange={(e) => setUnitQuantityType(e.target.value)}
+                  placeholder="e.g., kg, liters"
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Batch Quantity</Label>
+                <Input
+                  value={batchQuantity}
+                  onChange={(e) => setBatchQuantity(e.target.value)}
+                  placeholder="Enter batch quantity"
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Unit Price</Label>
+                <Input
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                  placeholder="Enter unit price"
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Arrival, Next Owner, Logistics & Invoice */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Shipping & Invoice</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4">
-            <div>
-              <Label htmlFor="arrival-date">Estimated Arrival Date</Label>
-              <Input
-                id="arrival-date"
-                type="date"
-                value={estimatedArrivalDate}
-                onChange={(e) => setEstimatedArrivalDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="next-owner">Next Owner Wallet Address</Label>
-              <Input
-                id="next-owner"
-                value={nextOwnerWallet}
-                onChange={(e) => setNextOwnerWallet(e.target.value)}
-                placeholder="0x..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="logistic-wallet">Logistic Partner Wallet Address</Label>
-              <Input
-                id="logistic-wallet"
-                value={logisticPartnerWallet}
-                onChange={(e) => setLogisticPartnerWallet(e.target.value)}
-                placeholder="0x..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="amount-due">Amount Due (Wei)</Label>
-              <Input
-                id="amount-due"
-                value={amountDue}
-                onChange={(e) => setAmountDue(e.target.value)}
-                placeholder="Enter amount due"
-              />
-            </div>
-          </CardContent>
-        </Card>
+          {/* Arrival, Next Owner, Logistics & Invoice */}
+          <Card className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-[#2D4EA2]">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="p-2 bg-white rounded-lg border-2 border-[#2D4EA2]">
+                  <TruckIcon className="w-5 h-5 text-[#2D4EA2]" />
+                </div>
+                <CardTitle className="text-xl text-[#161C54]">Shipping & Invoice</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Estimated Arrival Date</Label>
+                <Input
+                  type="date"
+                  value={estimatedArrivalDate}
+                  onChange={(e) => setEstimatedArrivalDate(e.target.value)}
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Next Owner Wallet Address</Label>
+                <Input
+                  value={nextOwnerWallet}
+                  onChange={(e) => setNextOwnerWallet(e.target.value)}
+                  placeholder="0x..."
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Logistic Partner Wallet Address</Label>
+                <Input
+                  value={logisticPartnerWallet}
+                  onChange={(e) => setLogisticPartnerWallet(e.target.value)}
+                  placeholder="0x..."
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Amount Due (Wei)</Label>
+                <Input
+                  value={amountDue}
+                  onChange={(e) => setAmountDue(e.target.value)}
+                  placeholder="Enter amount due"
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Proof of Product */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Proof of Product</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Label htmlFor="proof-file">Upload Document</Label>
-            <Input
-              id="proof-file"
-              type="file"
-              onChange={handleFileChange}
-            />
-          </CardContent>
-        </Card>
+          {/* Proof of Product */}
+          <Card className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-[#2D4EA2]">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="p-2 bg-white rounded-lg border-2 border-[#2D4EA2]">
+                  <DocumentIcon className="w-5 h-5 text-[#2D4EA2]" />
+                </div>
+                <CardTitle className="text-xl text-[#161C54]">Proof of Product</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[#161C54] font-medium">Upload Document</Label>
+                <Input
+                  type="file"
+                  onChange={handleFileChange}
+                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-        <Button
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-          onClick={handleCreateProduct}
-          disabled={loading}
-        >
-          {loading ? "Creating..." : "Create Product and Ship"}
-        </Button>
+          {/* Submit Button */}
+          <Button
+            onClick={handleCreateProduct}
+            disabled={loading}
+            className="w-full bg-[#2D4EA2] hover:bg-[#263F82] text-white font-medium py-3 rounded-lg transition-all duration-300 transform hover:-translate-y-0.5"
+          >
+            <span className="flex items-center justify-center">
+              {loading ? "Creating..." : (
+                <>
+                  Create Product and Ship
+                  <svg 
+                    className="ml-2 w-5 h-5" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M14 5l7 7m0 0l-7 7m7-7H3" 
+                    />
+                  </svg>
+                </>
+              )}
+            </span>
+          </Button>
+        </div>
       </main>
     </div>
   );
