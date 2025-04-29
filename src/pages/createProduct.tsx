@@ -15,11 +15,21 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useLoadScript, Autocomplete } from "@react-google-maps/api";
+
+const libraries = ["places"] as const;
 
 // Simple type for inventory items (for dropdown)
 type InventoryItem = {
   id: string;
   name: string;
+};
+
+// Add this type definition at the top with other types
+type OtherComponent = {
+  name: string;
+  quantity: string;
+  unitType: string;
 };
 
 export default function CreateProduct() {
@@ -33,7 +43,7 @@ export default function CreateProduct() {
     { id: string; quantity: string }[]
   >([]);
   // Additional free-text input for components like water, sugar, etc.
-  const [otherComponents, setOtherComponents] = useState("");
+  const [otherComponents, setOtherComponents] = useState<OtherComponent[]>([]);
 
   // General product details
   const [productName, setProductName] = useState("");
@@ -66,6 +76,15 @@ export default function CreateProduct() {
   // File upload state (optional)
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Add these states after other state declarations
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+
+  // Add the Google Maps script loader
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries,
+  });
 
   // Fetch user role on mount
   useEffect(() => {
@@ -154,6 +173,26 @@ export default function CreateProduct() {
     setSelectedComponents(selectedComponents.filter((item) => item.id !== id));
   };
 
+  const handleAddOtherComponent = () => {
+    setOtherComponents([...otherComponents, { name: '', quantity: '', unitType: '' }]);
+  };
+
+  const handleUpdateOtherComponent = (
+    index: number,
+    field: keyof OtherComponent,
+    value: string
+  ) => {
+    setOtherComponents(prev => 
+      prev.map((comp, i) => 
+        i === index ? { ...comp, [field]: value } : comp
+      )
+    );
+  };
+
+  const handleRemoveOtherComponent = (index: number) => {
+    setOtherComponents(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleCreateProduct = async () => {
     const contract = getContract();
     if (!contract) return;
@@ -179,8 +218,8 @@ export default function CreateProduct() {
         category: productCategory,
         variety,
         misc: ipfsHash
-          ? `${misc} | IPFS: ${ipfsHash} | Other Components: ${otherComponents}`
-          : `${misc} | Other Components: ${otherComponents}`
+          ? `${misc} | IPFS: ${ipfsHash} | Other Components: ${JSON.stringify(otherComponents)}`
+          : `${misc} | Other Components: ${JSON.stringify(otherComponents)}`
       };
 
       // For Suppliers, component product IDs must be empty.
@@ -200,7 +239,9 @@ export default function CreateProduct() {
         estimatedArrivalDate,  // _arrivalDate
         logisticPartnerWallet, // _logisticPartner
         parseInt(amountDue) || 0,  // _amountDue
-        otherComponents        // _otherComponents
+        otherComponents.map(comp => 
+          `${comp.name}:${comp.quantity}${comp.unitType}`
+        ).join(',')  // Format other components as a comma-separated string
       );
       await tx.wait();
 
@@ -212,6 +253,23 @@ export default function CreateProduct() {
       setLoading(false);
     }
   };
+
+  // Add loading and error handlers before the return statement
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Error loading maps</p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading maps...</p>
+      </div>
+    );
+  }
 
   if (loadingRole) {
     return <div className="min-h-screen flex justify-center items-center">Loading role...</div>;
@@ -288,14 +346,56 @@ export default function CreateProduct() {
                   </div>
                 )}
 
-                <div>
-                  <Label htmlFor="other-components">Other Components</Label>
-                  <Input
-                    id="other-components"
-                    value={otherComponents}
-                    onChange={(e) => setOtherComponents(e.target.value)}
-                    placeholder="e.g., water, sugar"
-                  />
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label>Other Components</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddOtherComponent}
+                    >
+                      Add Component
+                    </Button>
+                  </div>
+                  
+                  {otherComponents.map((comp, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-2 items-start">
+                      <div className="col-span-6">
+                        <Input
+                          value={comp.name}
+                          onChange={(e) => handleUpdateOtherComponent(index, 'name', e.target.value)}
+                          placeholder="Component name"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          value={comp.quantity}
+                          onChange={(e) => handleUpdateOtherComponent(index, 'quantity', e.target.value)}
+                          placeholder="Qty"
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <Input
+                          value={comp.unitType}
+                          onChange={(e) => handleUpdateOtherComponent(index, 'unitType', e.target.value)}
+                          placeholder="Unit type"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveOtherComponent(index)}
+                          className="text-red-600 px-2"
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -347,12 +447,24 @@ export default function CreateProduct() {
           <CardContent className="grid grid-cols-1 gap-4">
             <div>
               <Label htmlFor="origin">Place of Origin</Label>
-              <Input
-                id="origin"
-                value={placeOfOrigin}
-                onChange={(e) => setPlaceOfOrigin(e.target.value)}
-                placeholder="Enter place of origin"
-              />
+              <Autocomplete
+                onLoad={(auto) => setAutocomplete(auto)}
+                onPlaceChanged={() => {
+                  if (autocomplete) {
+                    const place = autocomplete.getPlace();
+                    const formatted = place.formatted_address || "";
+                    setPlaceOfOrigin(formatted);
+                  }
+                }}
+              >
+                <Input
+                  id="origin"
+                  value={placeOfOrigin}
+                  onChange={(e) => setPlaceOfOrigin(e.target.value)}
+                  placeholder="Start typing location..."
+                  className="border-gray-300 focus:ring-[#4F55F7] focus:border-transparent"
+                />
+              </Autocomplete>
             </div>
             <div>
               <Label htmlFor="prod-date">Production Date</Label>

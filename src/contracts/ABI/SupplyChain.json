@@ -317,6 +317,11 @@
             "type": "string"
           },
           {
+            "internalType": "address",
+            "name": "creator",
+            "type": "address"
+          },
+          {
             "internalType": "string[]",
             "name": "componentProductIds",
             "type": "string[]"
@@ -460,6 +465,11 @@
             "internalType": "string",
             "name": "name",
             "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "creator",
+            "type": "address"
           },
           {
             "internalType": "string[]",
@@ -607,6 +617,11 @@
             "type": "string"
           },
           {
+            "internalType": "address",
+            "name": "creator",
+            "type": "address"
+          },
+          {
             "internalType": "string[]",
             "name": "componentProductIds",
             "type": "string[]"
@@ -750,6 +765,11 @@
             "internalType": "string",
             "name": "name",
             "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "creator",
+            "type": "address"
           },
           {
             "internalType": "string[]",
@@ -986,6 +1006,11 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "creator",
+        "type": "address"
       },
       {
         "internalType": "address",

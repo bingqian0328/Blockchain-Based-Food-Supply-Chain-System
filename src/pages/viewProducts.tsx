@@ -57,6 +57,8 @@ export default function ViewProducts() {
   >({});
   const [receivedProducts, setReceivedProducts] = useState<Set<string>>(new Set());
   const [inventoryProducts, setInventoryProducts] = useState<Set<string>>(new Set());
+  const [logisticsHistory, setLogisticsHistory] = useState<ProductDetails[]>([]);
+  const [productHistory, setProductHistory] = useState<ProductDetails[]>([]);
 
   const getIPFSHash = (misc: string) => {
     const marker = "IPFS:";
@@ -88,6 +90,11 @@ export default function ViewProducts() {
       const lower = addr.toLowerCase();
       setUserAddress(lower);
 
+      // Get user's inventory first
+      const userInventory = await contract.getInventory(lower);
+      const inventorySet = new Set(userInventory.map((p: ProductDetails) => p.id));
+      setInventoryProducts(inventorySet);
+
       const roleBN = await contract.getUserRole(lower);
       const roleNames = [
         "Supplier",
@@ -100,36 +107,49 @@ export default function ViewProducts() {
       setUserRole(role);
 
       // Fetch assigned products
-      const rawAssigned =
-        role === "Logistic Partner"
-          ? await contract.getProductsForLogisticPartner(lower)
-          : await contract.getProductsForNextOwner(lower);
+      if (role === "Logistic Partner") {
+        const rawAssigned = await contract.getProductsForLogisticPartner(lower);
+        const formattedProducts = rawAssigned.map((p: ProductDetails) => ({
+          ...p,
+          nextOwner: p.nextOwner.toLowerCase(),
+          logisticPartner: p.logisticPartner.toLowerCase(),
+        }));
 
-      // Check inventory status for each product
-      const inventoryStatuses = await Promise.all(
-        rawAssigned.map((p: ProductDetails) => 
-          contract.isProductInInventory(p.id, lower)
-        )
-      );
+        // Separate active and delivered products
+        const activeProducts = formattedProducts.filter(p => p.shipmentStatus < 7);
+        const deliveredProducts = formattedProducts.filter(p => p.shipmentStatus === 7);
 
-      // Update inventory set with fetched statuses
-      const newInventorySet = new Set<string>();
-      rawAssigned.forEach((p: ProductDetails, index: number) => {
-        if (inventoryStatuses[index]) {
-          newInventorySet.add(p.id);
-        }
-      });
-      setInventoryProducts(newInventorySet);
+        setAssignedProducts(activeProducts);  // Only set non-delivered products
+        setLogisticsHistory(deliveredProducts);  // Set delivered products to history
+        
+        // Only set shipment updates for active products
+        setShipmentStatusUpdates(
+          activeProducts.reduce((acc, p) => ({ ...acc, [p.id]: p.shipmentStatus }), {})
+        );
+      } else {
+        const rawAssigned = await contract.getProductsForNextOwner(lower);
+        
+        // Check inventory status for all products at once
+        const inventoryChecks = await Promise.all(
+          rawAssigned.map(p => contract.isProductInInventory(p.id, lower))
+        );
 
-      const fmtAssigned = rawAssigned.map((p: ProductDetails) => ({
-        ...p,
-        nextOwner: p.nextOwner.toLowerCase(),
-        logisticPartner: p.logisticPartner.toLowerCase(),
-      }));
-      setAssignedProducts(fmtAssigned);
-      setShipmentStatusUpdates(
-        fmtAssigned.reduce((acc, p) => ({ ...acc, [p.id]: p.shipmentStatus }), {})
-      );
+        // Filter active and history products using the results
+        const activeProducts = rawAssigned.filter((_, index) => !inventoryChecks[index]);
+        const historyProducts = rawAssigned.filter((_, index) => inventoryChecks[index]);
+
+        const fmtAssigned = activeProducts.map((p: ProductDetails) => ({
+          ...p,
+          nextOwner: p.nextOwner.toLowerCase(),
+          logisticPartner: p.logisticPartner.toLowerCase(),
+        }));
+        
+        setAssignedProducts(fmtAssigned);
+        setProductHistory(historyProducts);
+        setShipmentStatusUpdates(
+          fmtAssigned.reduce((acc, p) => ({ ...acc, [p.id]: p.shipmentStatus }), {})
+        );
+      }
 
       // Created
       if (["Supplier", "Manufacturer"].includes(role)) {
@@ -142,6 +162,19 @@ export default function ViewProducts() {
           }))
         );
       }
+
+      // Filter out products that are in inventory from assigned products
+      const activeProducts = rawAssigned.filter(p => 
+        !inventoryProducts.has(p.id)
+      );
+      setAssignedProducts(activeProducts);
+
+      // Get products in inventory for history
+      const historyProducts = rawAssigned.filter(p => 
+        inventoryProducts.has(p.id)
+      );
+      setProductHistory(historyProducts);
+
     } catch (e) {
       console.error(e);
     } finally {
@@ -173,14 +206,24 @@ export default function ViewProducts() {
       if (!contract) return;
       
       const tx1 = await contract.markParcelReceived(id);
-      await tx1.wait();
+      await tx1.wait(); // Wait for transaction to be mined
 
-      // Add the product ID to both received and inventory sets
-      setReceivedProducts(prev => new Set([...prev, id]));
-      setInventoryProducts(prev => new Set([...prev, id]));
+      // Get the updated inventory status from blockchain
+      const isInInventory = await contract.isProductInInventory(id, userAddress);
+      
+      if (isInInventory) {
+        const productToMove = assignedProducts.find(p => p.id === id);
+        if (productToMove) {
+          setProductHistory(prev => [...prev, productToMove]);
+          setAssignedProducts(prev => prev.filter(p => p.id !== id));
+          setInventoryProducts(prev => new Set([...prev, id]));
+        }
+      }
+      
+      // Refresh the products to get latest blockchain state
+      await fetchProducts();
       
       alert("Product received and added to inventory successfully!");
-      fetchProducts();
     } catch (error) {
       console.error("Error marking product as received:", error);
       alert("Failed to confirm receipt and add to inventory.");
@@ -199,6 +242,7 @@ export default function ViewProducts() {
             {["Supplier", "Manufacturer"].includes(userRole) && (
               <TabsTrigger value="created">Created</TabsTrigger>
             )}
+            <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
           <TabsContent value="assigned">
@@ -252,7 +296,7 @@ export default function ViewProducts() {
                       <ShipmentTracker currentStatus={p.shipmentStatus} />
                     </div>
 
-                    {userRole === "Logistic Partner" && (
+                    {userRole === "Logistic Partner" && p.shipmentStatus < 7 && (
                       <div className="mt-4 flex items-center space-x-3">
                         <Select
                           value={String(shipmentStatusUpdates[p.id])}
@@ -380,6 +424,102 @@ export default function ViewProducts() {
                     </div>
                     <div className="mt-6">
                       <ShipmentTracker currentStatus={p.shipmentStatus} />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          {userRole === "Logistic Partner" && (
+            <TabsContent value="history">
+              {loading ? (
+                <p>Loading…</p>
+              ) : logisticsHistory.length === 0 ? (
+                <p>No delivery history available.</p>
+              ) : (
+                logisticsHistory.map((p) => (
+                  <Card key={p.id} className="mb-4">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        {p.name}
+                        <Badge variant="success">Delivered</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <strong>ID:</strong> {p.id}
+                        </div>
+                        <div>
+                          <strong>Barcode:</strong> {p.barcode}
+                        </div>
+                        <div>
+                          <strong>Next Owner:</strong> {p.nextOwner}
+                        </div>
+                        <div>
+                          <strong>Location:</strong> {p.locationEntry.location}
+                        </div>
+                        <div>
+                          <strong>Delivery Date:</strong> {p.locationEntry.arrivalDate}
+                        </div>
+                        <div>
+                          <strong>Category:</strong> {p.attributes.category}
+                        </div>
+                      </div>
+                      <div className="mt-6">
+                        <ShipmentTracker currentStatus={7} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </TabsContent>
+          )}
+
+          <TabsContent value="history">
+            {loading ? (
+              <p>Loading…</p>
+            ) : productHistory.length === 0 ? (
+              <p>No products in history.</p>
+            ) : (
+              productHistory.map((p) => (
+                <Card key={p.id} className="mb-4">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      {p.name}
+                      <Badge variant="success">In Inventory</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <strong>ID:</strong> {p.id}
+                      </div>
+                      <div>
+                        <strong>Barcode:</strong> {p.barcode}
+                      </div>
+                      <div>
+                        <strong>Category:</strong> {p.attributes.category}
+                      </div>
+                      <div>
+                        <strong>Variety:</strong> {p.attributes.variety}
+                      </div>
+                      <div>
+                        <strong>Location:</strong> {p.locationEntry.location}
+                      </div>
+                      <div>
+                        <strong>Received Date:</strong> {p.locationEntry.arrivalDate}
+                      </div>
+                      <div className="col-span-2">
+                        <strong>Status:</strong>{" "}
+                        <Badge variant="success">
+                          Received & In Inventory
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="mt-6">
+                      <ShipmentTracker currentStatus={7} />
                     </div>
                   </CardContent>
                 </Card>
