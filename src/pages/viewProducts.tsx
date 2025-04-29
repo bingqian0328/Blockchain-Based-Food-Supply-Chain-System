@@ -17,6 +17,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@/components/ui/tabs";
+import ShipmentTracker from "@/components/ShipmentTracker";
 
 type ProductDetails = {
   id: string;
@@ -54,6 +55,8 @@ export default function ViewProducts() {
   const [shipmentStatusUpdates, setShipmentStatusUpdates] = useState<
     Record<string, number>
   >({});
+  const [receivedProducts, setReceivedProducts] = useState<Set<string>>(new Set());
+  const [inventoryProducts, setInventoryProducts] = useState<Set<string>>(new Set());
 
   const getIPFSHash = (misc: string) => {
     const marker = "IPFS:";
@@ -63,8 +66,16 @@ export default function ViewProducts() {
   };
 
   const statusLabel = (s: number) =>
-    ["Not Shipped", "Picked Up", "Sorting Center", "To Delivery Hub", "Out For Delivery", "Delivered"][s] ||
-    "Unknown";
+    [
+      "Not Shipped",
+      "Ready For Shipment",
+      "Picked Up",
+      "Arrived at Sorting Center",
+      "On The Way to Delivery Hub",
+      "Arrived at Delivery Hub",
+      "Out For Delivery",
+      "Delivered"
+    ][s] || "Unknown";
 
   async function fetchProducts() {
     setLoading(true);
@@ -88,11 +99,28 @@ export default function ViewProducts() {
       const role = roleNames[Number(roleBN)] || "Unknown";
       setUserRole(role);
 
-      // Assigned
+      // Fetch assigned products
       const rawAssigned =
         role === "Logistic Partner"
           ? await contract.getProductsForLogisticPartner(lower)
           : await contract.getProductsForNextOwner(lower);
+
+      // Check inventory status for each product
+      const inventoryStatuses = await Promise.all(
+        rawAssigned.map((p: ProductDetails) => 
+          contract.isProductInInventory(p.id, lower)
+        )
+      );
+
+      // Update inventory set with fetched statuses
+      const newInventorySet = new Set<string>();
+      rawAssigned.forEach((p: ProductDetails, index: number) => {
+        if (inventoryStatuses[index]) {
+          newInventorySet.add(p.id);
+        }
+      });
+      setInventoryProducts(newInventorySet);
+
       const fmtAssigned = rawAssigned.map((p: ProductDetails) => ({
         ...p,
         nextOwner: p.nextOwner.toLowerCase(),
@@ -143,10 +171,19 @@ export default function ViewProducts() {
     try {
       const contract = getContract();
       if (!contract) return;
-      await (await contract.markParcelReceived(id)).wait();
+      
+      const tx1 = await contract.markParcelReceived(id);
+      await tx1.wait();
+
+      // Add the product ID to both received and inventory sets
+      setReceivedProducts(prev => new Set([...prev, id]));
+      setInventoryProducts(prev => new Set([...prev, id]));
+      
+      alert("Product received and added to inventory successfully!");
       fetchProducts();
-    } catch {
-      alert("Failed to confirm receipt.");
+    } catch (error) {
+      console.error("Error marking product as received:", error);
+      alert("Failed to confirm receipt and add to inventory.");
     }
   };
 
@@ -204,6 +241,15 @@ export default function ViewProducts() {
                       <div>
                         <strong>Variety:</strong> {p.attributes.variety}
                       </div>
+                      <div className="col-span-2">
+                        <strong>Shipment Status:</strong>{" "}
+                        <Badge variant={p.shipmentStatus === 5 ? "success" : "secondary"}>
+                          {statusLabel(p.shipmentStatus)}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="mt-6">
+                      <ShipmentTracker currentStatus={p.shipmentStatus} />
                     </div>
 
                     {userRole === "Logistic Partner" && (
@@ -217,17 +263,15 @@ export default function ViewProducts() {
                           <SelectTrigger className="w-48">
                             <SelectValue placeholder="Change Status" />
                           </SelectTrigger>
-                          <SelectContent  >
+                          <SelectContent>
                             <SelectItem value="0">Not Shipped</SelectItem>
-                            <SelectItem value="1">Picked Up</SelectItem>
-                            <SelectItem value="2">
-                              Arrived at Sorting Center
-                            </SelectItem>
-                            <SelectItem value="3">
-                              On The Way to Delivery Hub
-                            </SelectItem>
-                            <SelectItem value="4">Out For Delivery</SelectItem>
-                            <SelectItem value="5">Delivered</SelectItem>
+                            <SelectItem value="1">Ready For Shipment</SelectItem>
+                            <SelectItem value="2">Picked Up</SelectItem>
+                            <SelectItem value="3">Arrived at Sorting Center</SelectItem>
+                            <SelectItem value="4">On The Way to Delivery Hub</SelectItem>
+                            <SelectItem value="5">Arrived at Delivery Hub</SelectItem>
+                            <SelectItem value="6">Out For Delivery</SelectItem>
+                            <SelectItem value="7">Delivered</SelectItem>
                           </SelectContent>
                         </Select>
                         <Button onClick={() => updateShipment(p.id)}>
@@ -246,6 +290,26 @@ export default function ViewProducts() {
                         >
                           Parcel Received
                         </Button>
+                      )}
+
+                    {["Manufacturer", "Retail Store"].includes(userRole) &&
+                      (p.shipmentStatus === 7) && // Delivered
+                      p.nextOwner === userAddress && (
+                        <div className="mt-4">
+                          {inventoryProducts.has(p.id) ? (
+                            <Badge variant="success" className="w-full flex justify-center py-2">
+                              Added to Inventory
+                            </Badge>
+                          ) : !receivedProducts.has(p.id) && (
+                            <Button
+                              variant="secondary"
+                              className="w-full"
+                              onClick={() => markReceived(p.id)}
+                            >
+                              Product Received & Add to Inventory
+                            </Button>
+                          )}
+                        </div>
                       )}
                   </CardContent>
                 </Card>
@@ -291,6 +355,12 @@ export default function ViewProducts() {
                         <strong>Variety:</strong> {p.attributes.variety}
                       </div>
                       <div className="col-span-2">
+                        <strong>Shipment Status:</strong>{" "}
+                        <Badge variant={p.shipmentStatus === 5 ? "success" : "secondary"}>
+                          {statusLabel(p.shipmentStatus)}
+                        </Badge>
+                      </div>
+                      <div className="col-span-2">
                         <strong>Proof Doc:</strong>{" "}
                         {getIPFSHash(p.attributes.misc) ? (
                           <a
@@ -307,6 +377,9 @@ export default function ViewProducts() {
                           <span className="text-muted">None</span>
                         )}
                       </div>
+                    </div>
+                    <div className="mt-6">
+                      <ShipmentTracker currentStatus={p.shipmentStatus} />
                     </div>
                   </CardContent>
                 </Card>
