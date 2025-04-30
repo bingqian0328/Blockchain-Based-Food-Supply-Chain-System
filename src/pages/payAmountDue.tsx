@@ -11,7 +11,7 @@ import { Receipt, CreditCard, AlertCircle } from "lucide-react";
 type InvoiceDetails = {
   id: string;
   name: string;
-  amountDue: string; // Wei
+  amountDue: string; // Gwei instead of Wei
   invoicePaid: boolean;
 };
 
@@ -123,7 +123,7 @@ export default function PayAmountDue() {
                         </div>
                       </div>
                       <Badge className="bg-[#EEF2F6] text-[#2D4EA2] font-medium px-3 py-1">
-                        {inv.amountDue} Wei
+                        {inv.amountDue} Gwei
                       </Badge>
                     </div>
                   </CardHeader>
@@ -153,7 +153,7 @@ export default function PayAmountDue() {
                 <CardContent className="pt-6 space-y-6">
                   <div className="space-y-2">
                     <Label className="text-[#161C54] font-medium" htmlFor="amount">
-                      Amount (Wei)
+                      Amount (Gwei)
                     </Label>
                     <Input
                       id="amount"

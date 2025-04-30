@@ -87,20 +87,37 @@ export default function Inventory() {
   const handleUpdateSoldOut = async (productId: string) => {
     const contract = getContract();
     if (!contract) return;
+  
+    // Get the product from inventory to check current unit quantity
+    const product = inventory.find(p => p.id === productId);
     const soldQuantity = parseInt(soldQuantityUpdates[productId]);
+    
+    // Validate input
     if (isNaN(soldQuantity) || soldQuantity <= 0) {
       alert("Please enter a valid sold quantity");
       return;
     }
+  
+    // Check if there's enough unit quantity available
+    const currentUnitQuantity = parseInt(product?.attributes.unitQuantity || "0");
+    if (soldQuantity > currentUnitQuantity) {
+      alert(`Cannot sell more than available stock (${currentUnitQuantity} ${product?.attributes.unitQuantityType} available)`);
+      return;
+    }
+  
     try {
       const tx = await contract.updateSoldOut(productId, soldQuantity);
       await tx.wait();
-      alert("Inventory updated successfully!");
-      // Refresh inventory after update
-      fetchInventory();
+      alert("Stock updated successfully!");
+      
+      // Clear the input
+      setSoldQuantityUpdates(prev => ({ ...prev, [productId]: "" }));
+      
+      // Refresh inventory to get updated quantities
+      await fetchInventory();
     } catch (error) {
-      console.error("Error updating inventory:", error);
-      alert("Failed to update inventory.");
+      console.error("Error updating stock:", error);
+      alert("Failed to update stock.");
     }
   };
 
@@ -160,7 +177,7 @@ export default function Inventory() {
                       </div>
                     </div>
                     <div className="text-lg font-medium text-[#2D4EA2]">
-                      Stock: {product.attributes.batchQuantity}
+                      Stock: {product.attributes.unitQuantity} {product.attributes.unitQuantityType}
                     </div>
                   </div>
                 </CardHeader>
@@ -173,9 +190,9 @@ export default function Inventory() {
                       <p className="text-lg font-medium text-[#161C54] mt-1">{product.barcode}</p>
                     </div>
                     <div>
-                      <p className="text-base text-gray-500">Unit Quantity</p>
+                      <p className="text-base text-gray-500">Per Batch Quantity</p>
                       <p className="text-lg font-medium text-[#161C54] mt-1">
-                        {product.attributes.unitQuantity} {product.attributes.unitQuantityType}
+                        {product.attributes.batchQuantity}
                       </p>
                     </div>
                     <div>

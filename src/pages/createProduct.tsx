@@ -58,6 +58,9 @@ export default function CreateProduct() {
   const [variety, setVariety] = useState("");
   const [misc, setMisc] = useState("");
 
+  // First, update the state to handle "Other" category
+  const [otherCategory, setOtherCategory] = useState("");
+
   // Generate a unique product code
   const generateProductCode = () =>
     "PRD-" + Math.floor(100000 + Math.random() * 900000).toString();
@@ -260,6 +263,19 @@ export default function CreateProduct() {
     }
   };
 
+  // First, modify the useEffect hook to calculate amount due when unit price or unit quantity changes
+  useEffect(() => {
+    // Convert unit price from ETH to Gwei (1 ETH = 10^9 Gwei)
+    const priceInGwei = parseFloat(unitPrice) * Math.pow(10, 9);
+    const quantity = parseFloat(unitQuantity) || 0;
+    const totalAmount = priceInGwei * quantity;
+    
+    // Update amount due if both values are valid numbers
+    if (!isNaN(totalAmount)) {
+      setAmountDue(totalAmount.toString());
+    }
+  }, [unitPrice, unitQuantity]);
+
   // Add loading and error handlers before the return statement
   if (loadError) {
     return (
@@ -436,12 +452,46 @@ export default function CreateProduct() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[#161C54] font-medium">Category</Label>
-                  <Input
+                  <Select
                     value={productCategory}
-                    onChange={(e) => setProductCategory(e.target.value)}
-                    placeholder="Enter category"
-                    className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
-                  />
+                    onValueChange={(value) => {
+                      setProductCategory(value);
+                      if (value !== "other") {
+                        setOtherCategory("");
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="border-gray-200 hover:border-[#2D4EA2] transition-colors">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fruit">Fruit</SelectItem>
+                      <SelectItem value="food">Food</SelectItem>
+                      <SelectItem value="beverages">Beverages</SelectItem>
+                      <SelectItem value="vegetables">Vegetables</SelectItem>
+                      <SelectItem value="meat">Meat</SelectItem>
+                      <SelectItem value="seafood">Seafood</SelectItem>
+                      <SelectItem value="dairy">Dairy Foods</SelectItem>
+                      <SelectItem value="grains">Grains, Beans and Nuts</SelectItem>
+                      <SelectItem value="sauce">Sauce / Dressing</SelectItem>
+                      <SelectItem value="other">Other (please specify)</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Show input field for "Other" category */}
+                  {productCategory === "other" && (
+                    <div className="mt-2">
+                      <Input
+                        value={otherCategory}
+                        onChange={(e) => {
+                          setOtherCategory(e.target.value);
+                          setProductCategory(`other: ${e.target.value}`);
+                        }}
+                        placeholder="Please specify category"
+                        className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[#161C54] font-medium">Variety</Label>
@@ -525,12 +575,47 @@ export default function CreateProduct() {
               </div>
               <div className="space-y-2">
                 <Label className="text-[#161C54] font-medium">Unit Quantity Type</Label>
-                <Input
+                <Select
                   value={unitQuantityType}
-                  onChange={(e) => setUnitQuantityType(e.target.value)}
-                  placeholder="e.g., kg, liters"
-                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
-                />
+                  onValueChange={setUnitQuantityType}
+                >
+                  <SelectTrigger className="border-gray-200 hover:border-[#2D4EA2] transition-colors">
+                    <SelectValue placeholder="Select unit type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Weight Units */}
+                    <SelectItem value="kg">Kilogram (kg)</SelectItem>
+                    <SelectItem value="g">Gram (g)</SelectItem>
+                    <SelectItem value="mg">Milligram (mg)</SelectItem>
+                    <SelectItem value="lb">Pound (lb)</SelectItem>
+                    <SelectItem value="oz">Ounce (oz)</SelectItem>
+                    
+                    {/* Volume Units */}
+                    <SelectItem value="l">Liter (L)</SelectItem>
+                    <SelectItem value="ml">Milliliter (mL)</SelectItem>
+                    <SelectItem value="gal">Gallon (gal)</SelectItem>
+                    <SelectItem value="fl_oz">Fluid Ounce (fl oz)</SelectItem>
+                    
+                    {/* Count Units */}
+                    <SelectItem value="pcs">Pieces (pcs)</SelectItem>
+                    <SelectItem value="units">Units</SelectItem>
+                    <SelectItem value="dozen">Dozen</SelectItem>
+                    <SelectItem value="box">Box</SelectItem>
+                    <SelectItem value="pack">Pack</SelectItem>
+                    <SelectItem value="case">Case</SelectItem>
+                    <SelectItem value="carton">Carton</SelectItem>
+                    
+                    {/* Area Units */}
+                    <SelectItem value="m2">Square Meter (m²)</SelectItem>
+                    <SelectItem value="ft2">Square Feet (ft²)</SelectItem>
+                    
+                    {/* Length Units */}
+                    <SelectItem value="m">Meter (m)</SelectItem>
+                    <SelectItem value="cm">Centimeter (cm)</SelectItem>
+                    <SelectItem value="ft">Feet (ft)</SelectItem>
+                    <SelectItem value="in">Inch (in)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-[#161C54] font-medium">Batch Quantity</Label>
@@ -592,13 +677,25 @@ export default function CreateProduct() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[#161C54] font-medium">Amount Due (Wei)</Label>
-                <Input
-                  value={amountDue}
-                  onChange={(e) => setAmountDue(e.target.value)}
-                  placeholder="Enter amount due"
-                  className="border-gray-200 focus:ring-[#2D4EA2] focus:border-[#2D4EA2]"
-                />
+                <Label className="text-[#161C54] font-medium">Amount Due (Gwei)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={amountDue}
+                    readOnly
+                    className="border-gray-200 bg-gray-50 cursor-not-allowed"
+                  />
+                  <div className="text-sm text-gray-500">
+                    {unitQuantity && unitPrice ? (
+                      <span>
+                        Calculated: {unitQuantity} × {unitPrice} ETH = {amountDue} Gwei
+                      </span>
+                    ) : (
+                      <span>
+                        Auto-calculated from quantity and price
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

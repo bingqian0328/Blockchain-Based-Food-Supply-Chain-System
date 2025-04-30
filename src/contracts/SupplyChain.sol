@@ -123,10 +123,11 @@ contract SupplyChain is Structure {
             require(_componentProductIds.length == _componentQuantities.length, "Component IDs and quantities length mismatch");
             for (uint256 i = 0; i < _componentProductIds.length; i++) {
                 require(
-                    products[_componentProductIds[i]].attributes.batchQuantity >= _componentQuantities[i],
+                    products[_componentProductIds[i]].attributes.unitQuantity >= _componentQuantities[i],
                     "Not enough inventory for component"
                 );
-                products[_componentProductIds[i]].attributes.batchQuantity -= _componentQuantities[i];
+                // Deduct from unitQuantity instead of batchQuantity
+                products[_componentProductIds[i]].attributes.unitQuantity -= _componentQuantities[i];
             }
         }
         // Append additional components info to misc field.
@@ -354,7 +355,16 @@ contract SupplyChain is Structure {
         Product storage p = products[_productId];
         // Only the retail store (currentOwner) can update inventory
         require(msg.sender == p.currentOwner, "Only the retail store merchant can update inventory");
-        require(p.attributes.batchQuantity >= _soldQuantity, "Sold quantity exceeds available stock");
-        p.attributes.batchQuantity -= _soldQuantity;
+        require(p.attributes.unitQuantity >= _soldQuantity, "Sold quantity exceeds available stock");
+        // Deduct from unitQuantity instead of batchQuantity
+        p.attributes.unitQuantity -= _soldQuantity;
+        
+        // Add a history record for the stock update
+        emit ProductHistoryRecorded(
+            _productId,
+            "QuantityUpdated",
+            string(abi.encodePacked("Sold ", _soldQuantity.toString(), " units")),
+            block.timestamp
+        );
     }
 }
