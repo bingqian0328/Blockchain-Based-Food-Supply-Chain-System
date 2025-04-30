@@ -19,6 +19,12 @@
         "internalType": "uint256",
         "name": "amountPaid",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
       }
     ],
     "name": "InvoicePaid",
@@ -1181,6 +1187,16 @@
         "internalType": "enum Structure.ShipmentStatus",
         "name": "_newStatus",
         "type": "uint8"
+      },
+      {
+        "internalType": "string",
+        "name": "_deliveryProofIPFS",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_currentLocation",
+        "type": "string"
       }
     ],
     "name": "updateShipmentStatus",

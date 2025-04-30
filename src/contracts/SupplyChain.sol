@@ -29,7 +29,8 @@ contract SupplyChain is Structure {
     event InvoicePaid(
         string indexed productId,
         address indexed payer,
-        uint256 amountPaid
+        uint256 amountPaid,
+        address recipient // Add this parameter to track who received the payment
     );
     event ShipmentStatusUpdated(
         string indexed productId,
@@ -121,14 +122,38 @@ contract SupplyChain is Structure {
         // For Manufacturers: ensure the provided arrays match in length and update component inventory using product attributes.
         if (users[msg.sender].role == Role.Manufacturer) {
             require(_componentProductIds.length == _componentQuantities.length, "Component IDs and quantities length mismatch");
+            
+            // Create a new array to store component IDs
+            string[] memory componentIds = new string[](_componentProductIds.length);
+            
             for (uint256 i = 0; i < _componentProductIds.length; i++) {
                 require(
                     products[_componentProductIds[i]].attributes.unitQuantity >= _componentQuantities[i],
                     "Not enough inventory for component"
                 );
-                // Deduct from unitQuantity instead of batchQuantity
+                // Deduct from unitQuantity
                 products[_componentProductIds[i]].attributes.unitQuantity -= _componentQuantities[i];
+                
+                // Store the component ID
+                componentIds[i] = _componentProductIds[i];
+                
+                // Record component usage in history
+                emit ProductHistoryRecorded(
+                    _id,
+                    "ComponentUsed",
+                    string(abi.encodePacked(
+                        "Used component ", 
+                        _componentProductIds[i], 
+                        " (", 
+                        _componentQuantities[i].uint2str(),  // Changed from toString() to uint2str()
+                        " units)"
+                    )),
+                    block.timestamp
+                );
             }
+
+            // Store component IDs in the product struct
+            products[_id].componentProductIds = componentIds;
         }
         // Append additional components info to misc field.
         string memory finalMisc = _attributes.misc;
@@ -178,6 +203,7 @@ contract SupplyChain is Structure {
 
     /**
      * @dev Allows the next owner to pay the invoice for a product.
+     * Payment is sent directly to the product creator, not the current owner.
      */
     function payAmountDue(string memory _productId) public payable {
         Product storage p = products[_productId];
@@ -187,12 +213,18 @@ contract SupplyChain is Structure {
 
         p.invoicePaid = true;
         p.shipmentStatus = ShipmentStatus.ReadyForShipment; // Automatically update status
-        payable(p.currentOwner).transfer(p.amountDue);
+        
+        // Transfer funds to the product creator instead of current owner
+        payable(p.creator).transfer(p.amountDue);
+        
         if (msg.value > p.amountDue) {
             payable(msg.sender).transfer(msg.value - p.amountDue);
         }
-        emit InvoicePaid(_productId, msg.sender, p.amountDue);
-        emit ShipmentStatusUpdated(_productId, uint8(p.shipmentStatus), block.timestamp); // Emit status update event
+        
+        // Update the event to show payment was made to creator
+        emit InvoicePaid(_productId, msg.sender, p.amountDue, p.creator);
+        
+        emit ShipmentStatusUpdated(_productId, uint8(p.shipmentStatus), block.timestamp);
         emit ProductHistoryRecorded(_productId, "InvoicePaid", "Invoice paid by next owner", block.timestamp);
     }
 
@@ -270,10 +302,15 @@ contract SupplyChain is Structure {
     }
 
     /**
-     * @dev Allows the logistic partner to update a product's shipment status.
-     * Note: For shipping to proceed, the invoice must be paid.
+     * @dev Allows the logistic partner to update a product's shipment status and location.
+     * When setting status to Delivered, automatically sets location to recipient's address.
      */
-    function updateShipmentStatus(string memory _productId, ShipmentStatus _newStatus) public {
+    function updateShipmentStatus(
+        string memory _productId, 
+        ShipmentStatus _newStatus, 
+        string memory _deliveryProofIPFS,
+        string memory _currentLocation // New parameter
+    ) public {
         Product storage p = products[_productId];
         require(msg.sender == p.logisticPartner, "Only assigned logistic partner can update");
         require(p.invoicePaid, "Invoice not paid");
@@ -283,15 +320,70 @@ contract SupplyChain is Structure {
             uint8(_newStatus) == uint8(p.shipmentStatus) + 1,
             "Invalid shipment status progression"
         );
+        
+        // Store the old location in previous locations array
+        p.locationData.previous.push(p.locationData.current.location);
+        
+        // Update location based on shipment status
+        if (_newStatus == ShipmentStatus.Delivered) {
+            // For delivered status, set location to recipient's address
+            p.locationData.current.location = users[p.nextOwner].physicalAddress;
+        } else {
+            // For other statuses, use the provided location
+            p.locationData.current.location = _currentLocation;
+        }
+        
+        // Update arrival date
+        p.locationData.current.arrivalDate = getCurrentDate(); // You need to implement this helper function
+        
+        // If setting to Delivered, require proof of delivery
+        if (_newStatus == ShipmentStatus.Delivered) {
+            require(bytes(_deliveryProofIPFS).length > 0, "Proof of delivery required");
+            
+            // Store the proof of delivery in the misc field
+            p.attributes.misc = string(abi.encodePacked(
+                p.attributes.misc,
+                " | POD_IPFS: ",
+                _deliveryProofIPFS
+            ));
+        }
 
         p.shipmentStatus = _newStatus;
         emit ShipmentStatusUpdated(_productId, uint8(_newStatus), block.timestamp);
+        
+        // Add delivery proof info to the history event if it's provided
+        string memory details = string(abi.encodePacked(
+            "Shipment status updated to ", 
+            uint(_newStatus).uint2str(),
+            " at location: ",
+            p.locationData.current.location
+        ));
+        
+        if (_newStatus == ShipmentStatus.Delivered) {
+            details = string(abi.encodePacked(details, " with proof of delivery"));
+        }
+        
         emit ProductHistoryRecorded(
             _productId,
             "ShipmentStatusUpdated",
-            string(abi.encodePacked("Shipment status updated to ", uint(_newStatus).uint2str())),
+            details,
             block.timestamp
         );
+        
+        // Add a specific location update event
+        emit ProductHistoryRecorded(
+            _productId,
+            "LocationUpdated",
+            string(abi.encodePacked("Location updated to: ", p.locationData.current.location)),
+            block.timestamp
+        );
+    }
+
+    // Helper function to get current date as a string
+    function getCurrentDate() internal view returns (string memory) {
+        // This is a simplified version that returns timestamp
+        // In a production environment, you might want to format this properly
+        return uint256(block.timestamp).uint2str();
     }
 
     /**
@@ -363,7 +455,7 @@ contract SupplyChain is Structure {
         emit ProductHistoryRecorded(
             _productId,
             "QuantityUpdated",
-            string(abi.encodePacked("Sold ", _soldQuantity.toString(), " units")),
+            string(abi.encodePacked("Sold ", _soldQuantity.uint2str(), " units")),  // Changed from toString() to uint2str()
             block.timestamp
         );
     }

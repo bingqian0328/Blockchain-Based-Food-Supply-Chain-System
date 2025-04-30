@@ -42,35 +42,89 @@ const getStatusLabel = (status: string): string => {
   return status;
 };
 
+// Add this helper function at the top of the file
+const parseComponentDetails = (details: string) => {
+  const matches = details.match(/Used component (.*?) \((\d+) units\)/);
+  if (matches) {
+    return {
+      id: matches[1],
+      quantity: matches[2]
+    };
+  }
+  return null;
+};
+
+// Add this helper function to extract IPFS hash from misc data
+const getDeliveryProofIPFS = (misc: string) => {
+  const marker = "POD_IPFS:";
+  const idx = misc.indexOf(marker);
+  if (idx === -1) return "";
+  return misc.substring(idx + marker.length).split("|")[0].trim();
+};
+
 export default function ProductHistory() {
   const router = useRouter();
   const { productId } = router.query;
   const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [components, setComponents] = useState<ProductComponents | null>(null);
+  const [productDetails, setProductDetails] = useState<any>(null);
 
-  // Move fetchHistory outside of useEffect
+  // Update the fetchHistory function to handle component events
   const fetchHistory = async () => {
     try {
       const contract = getContract();
       if (!contract) return;
 
-      // Create a filter for the ProductHistoryRecorded event for a given productId
       const filter = contract.filters.ProductHistoryRecorded(productId);
-      
-      // Query past events using the filter
       const events = await contract.queryFilter(filter);
       
-      // Map events to a simpler shape
-      const history: HistoryEvent[] = events.map((evt: any) => {
-        return {
-          eventType: evt.args && evt.args.eventType ? evt.args.eventType : "",
-          details: evt.args && evt.args.details ? evt.args.details : "",
-          timestamp: evt.args && evt.args.timestamp ? evt.args.timestamp.toNumber() : 0,
-        };
+      // Track components used
+      const usedComponents: { id: string; quantity: string }[] = [];
+      
+      // Filter out ComponentUsed events from the timeline
+      const history: HistoryEvent[] = events
+        .filter((evt: any) => evt.args.eventType !== "ComponentUsed")
+        .map((evt: any) => {
+          return {
+            eventType: evt.args.eventType,
+            details: evt.args.details,
+            timestamp: evt.args.timestamp.toNumber(),
+          };
+        });
+
+      // Collect component data from ComponentUsed events
+      events.forEach((evt: any) => {
+        if (evt.args.eventType === "ComponentUsed") {
+          const componentDetails = parseComponentDetails(evt.args.details);
+          if (componentDetails) {
+            usedComponents.push(componentDetails);
+          }
+        }
       });
 
       setHistoryEvents(history);
+
+      // If we found component usage events, fetch their details
+      if (usedComponents.length > 0) {
+        const componentDetails = await Promise.all(
+          usedComponents.map(async (comp) => {
+            const product = await contract.products(comp.id);
+            return {
+              id: comp.id,
+              name: product.name,
+              quantity: comp.quantity
+            };
+          })
+        );
+
+        setComponents({
+          componentIds: componentDetails.map(c => c.id),
+          componentNames: componentDetails.map(c => c.name),
+          componentQuantities: componentDetails.map(c => c.quantity),
+          otherComponents: ""  // This will be set separately if needed
+        });
+      }
     } catch (error) {
       console.error("Error fetching product history:", error);
     }
@@ -85,6 +139,9 @@ export default function ProductHistory() {
       // Get the product details
       const product = await contract.products(productId);
       console.log("Raw product data:", product);
+      
+      // Store the full product
+      setProductDetails(product);
 
       if (!product) {
         console.log("No product found");
@@ -243,6 +300,29 @@ export default function ProductHistory() {
                         <p className="text-sm text-gray-500 mt-2">
                           {new Date(evt.timestamp * 1000).toLocaleString()}
                         </p>
+                        {evt.eventType === "ShipmentStatusUpdated" && evt.details.includes("with proof of delivery") && (
+                          <div className="mt-2">
+                            <p className="text-sm font-medium text-[#2D4EA2]">Proof of Delivery:</p>
+                            <a 
+                              href={`https://ipfs.io/ipfs/${getDeliveryProofIPFS(productDetails?.attributes?.misc || '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 block"
+                            >
+                              <img 
+                                src={`https://ipfs.io/ipfs/${getDeliveryProofIPFS(productDetails?.attributes?.misc || '')}`}
+                                alt="Proof of delivery" 
+                                className="h-24 object-cover rounded-md border border-gray-200"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Not+Available';
+                                }}
+                              />
+                            </a>
+                            <p className="text-xs text-gray-500 mt-1">
+                              IPFS: {getDeliveryProofIPFS(productDetails?.attributes?.misc || '')}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
