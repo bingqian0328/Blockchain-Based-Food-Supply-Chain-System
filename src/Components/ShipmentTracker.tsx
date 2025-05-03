@@ -9,7 +9,7 @@ type ShipmentTrackerProps = {
 
 export default function ShipmentTracker({ currentStatus }: ShipmentTrackerProps) {
   const steps = [
-    { status: 0, label: "Payment" },
+    { status: 0, label: "Pending Payment" },
     { status: 1, label: "Ready For Shipment" },
     { status: 2, label: "Picked Up" },
     { status: 3, label: "Sorting Center" },

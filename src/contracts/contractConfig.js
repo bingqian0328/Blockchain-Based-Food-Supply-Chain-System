@@ -3,7 +3,7 @@ import contractAbi from "./ABI/SupplyChain.json";
 
 export const getContract = () => {
     const { ethereum } = window;
-    const contractAddress = "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e";
+    const contractAddress = "0x59b670e9fA9D0A427751Af201D676719a970857b";
 
     if (!contractAddress) {
         console.error("Contract address is undefined. Check your .env.local file.");

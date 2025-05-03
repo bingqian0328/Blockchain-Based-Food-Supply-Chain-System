@@ -476,11 +476,7 @@ export default function ViewProducts() {
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm text-gray-500">Place of Origin</p>
-                        <p className="text-sm font-medium text-[#161C54]">{p.locationEntry.location}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm text-gray-500">Arrival</p>
-                        <p className="text-sm font-medium text-[#161C54]">{p.locationEntry.arrivalDate}</p>
+                        <p className="text-sm font-medium text-[#161C54]">{p.attributes.placeOfOrigin}</p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm text-gray-500">Category</p>
@@ -736,7 +732,7 @@ export default function ViewProducts() {
                         <strong>Logistic Partner:</strong> {p.logisticPartner}
                       </div>
                       <div>
-                        <strong>Place of Origin:</strong> {p.locationEntry.location}
+                        <strong>Place of Origin:</strong> {p.attributes.placeOfOrigin}
                       </div>
                       <div>
                         <strong>Arrival:</strong> {p.locationEntry.arrivalDate}
@@ -754,7 +750,7 @@ export default function ViewProducts() {
                         </Badge>
                       </div>
                       <div className="col-span-2">
-                        <strong>Proof Doc:</strong>{" "}
+                        <strong>Product Document:</strong>{" "}
                         {getIPFSHash(p.attributes.misc) ? (
                           <a
                             href={`https://ipfs.io/ipfs/${getIPFSHash(
@@ -819,7 +815,7 @@ export default function ViewProducts() {
                           <strong>Next Owner:</strong> {p.nextOwner}
                         </div>
                         <div>
-                          <strong>Place of Origin:</strong> {p.locationEntry.location}
+                          <strong>Place of Origin:</strong> {p.attributes.placeOfOrigin}
                         </div>
                         <div>
                           <strong>Delivery Date:</strong> {p.locationEntry.arrivalDate}
@@ -898,7 +894,7 @@ export default function ViewProducts() {
                         <strong>Variety:</strong> {p.attributes.variety}
                       </div>
                       <div>
-                        <strong>Place of Origin:</strong> {p.locationEntry.location}
+                        <strong>Place of Origin:</strong> {p.attributes.placeOfOrigin}
                       </div>
                       <div>
                         <strong>Received Date:</strong> {p.locationEntry.arrivalDate}
