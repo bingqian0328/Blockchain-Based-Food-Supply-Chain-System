@@ -336,8 +336,8 @@ export default function ProductHistory() {
                             <p className="text-sm font-medium">{productDetails.attributes.batchQuantity.toString()}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-500">Unit Price</p>
-                            <p className="text-sm font-medium">{productDetails.attributes.unitPrice}</p>
+                            <p className="text-sm text-gray-500">Unit Price in ETH</p>
+                            <p className="text-sm font-medium">{productDetails.attributes.unitPrice} ETH</p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-500">Current Location</p>

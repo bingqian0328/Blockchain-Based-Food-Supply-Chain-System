@@ -95,6 +95,11 @@ export default function CreateProduct() {
     libraries,
   });
 
+  // Add these new state variables after your other state declarations
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [finalityTime, setFinalityTime] = useState<number | null>(null);
+  const [showFinalityResult, setShowFinalityResult] = useState(false);
+
   // Fetch user role on mount
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -205,16 +210,17 @@ export default function CreateProduct() {
   const handleCreateProduct = async () => {
     const contract = getContract();
     if (!contract) return;
-
+  
     try {
       setLoading(true);
-
+      setShowFinalityResult(false);
+      
       // Upload file to Pinata if provided and get the IPFS hash.
       let ipfsHash = "";
       if (file) {
         ipfsHash = await uploadToPinata(file);
       }
-
+  
       // Build the product attributes as expected by the smart contract.
       const attributes = {
         placeOfOrigin,
@@ -230,13 +236,22 @@ export default function CreateProduct() {
           ? `${misc} | IPFS: ${ipfsHash} | Other Components: ${JSON.stringify(otherComponents)}`
           : `${misc} | Other Components: ${JSON.stringify(otherComponents)}`
       };
-
+  
       // For Suppliers, component product IDs must be empty.
       const components = role === "Supplier" ? [] : selectedComponents.map((item) => item.id);
       const componentQuantities = role === "Supplier" ? [] : selectedComponents.map((item) => parseInt(item.quantity) || 0);
+  
+      // Store transaction hash in localStorage for reference
+      const storeTransactionHash = (hash: string) => {
+        localStorage.setItem("lastTxHash", hash);
+      };
 
+      // Start the timer right before MetaMask prompt appears
+      const start = Date.now();
+      setStartTime(start);
+      console.log("Transaction started at:", new Date(start).toISOString());
+  
       // Call the updated createProduct function on the contract.
-      // NOTE: The smart contract expects 11 parameters. The IPFS hash is now included in the attributes.misc field.
       const tx = await contract.createProduct(
         productCode,           // _id
         barcode,               // _barcode
@@ -252,12 +267,30 @@ export default function CreateProduct() {
           `${comp.name}:${comp.quantity}${comp.unitType}`
         ).join(',')  // Format other components as a comma-separated string
       );
+      
+      console.log("Transaction sent to blockchain at:", new Date().toISOString());
+      console.log("Transaction hash:", tx.hash);
+      storeTransactionHash(tx.hash); // Store the hash
+      
+      // Wait for the transaction to be mined
       await tx.wait();
-
-      alert("Product created successfully!");
+      
+      // Stop the timer
+      const end = Date.now();
+      const timeTaken = end - start;
+      setFinalityTime(timeTaken);
+      console.log("Transaction confirmed at:", new Date(end).toISOString());
+      console.log("Finality time:", timeTaken, "ms");
+      
+      // Show the result
+      setShowFinalityResult(true);
+      
+      alert(`Product created successfully!`);
     } catch (error) {
       console.error("Error creating product:", error);
       alert("Failed to create product.");
+      setStartTime(null);
+      setFinalityTime(null);
     } finally {
       setLoading(false);
     }
@@ -721,6 +754,43 @@ export default function CreateProduct() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Finality Time Result */}
+          {showFinalityResult && finalityTime !== null && (
+            <Card className="bg-white rounded-2xl shadow-md border-2 border-green-500 mt-4">
+              <CardContent className="pt-6 pb-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-bold text-green-600 mb-2">Transaction Confirmed!</h3>
+                  <div className="flex items-center justify-center space-x-2">
+                    <svg 
+                      className="w-6 h-6 text-green-500" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      />
+                    </svg>
+                    <span className="text-gray-600">Finality Time:</span>
+                    <span className="text-xl font-mono text-[#2D4EA2] font-bold">
+                      {(finalityTime / 1000).toFixed(2)}s
+                    </span>
+                  </div>
+                  
+                  <div className="mt-4 text-sm text-gray-500">
+                    <p>Transaction hash: {localStorage.getItem("lastTxHash") || "N/A"}</p>
+                    <p className="mt-1">
+                      Measuring time from MetaMask confirmation to blockchain confirmation
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Submit Button */}
           <Button
